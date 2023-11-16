@@ -1,0 +1,1768 @@
+From 2e4dfc68f852237290d51cad6767527fe6b9ab19 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Thu, 5 Oct 2023 14:27:54 +0000
+Subject: [PATCH 01/17] Change the make file and include homa library
+
+---
+ drivers/nvme/host/Makefile | 1 +
+ drivers/nvme/host/tcp.c    | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/drivers/nvme/host/Makefile b/drivers/nvme/host/Makefile
+index c7c3cf202d12..37f3d15dedd3 100644
+--- a/drivers/nvme/host/Makefile
++++ b/drivers/nvme/host/Makefile
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ 
+ ccflags-y				+= -I$(src)
++ccflags-y				+= -I/home/ubuntu/HomaModule/
+ 
+ obj-$(CONFIG_NVME_CORE)			+= nvme-core.o
+ obj-$(CONFIG_BLK_DEV_NVME)		+= nvme.o
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 5b332d9f87fc..693e7f63240b 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -16,6 +16,7 @@
+ #include <net/busy_poll.h>
+ #include <trace/events/sock.h>
+ 
++#include "homa.h"
+ #include "nvme.h"
+ #include "fabrics.h"
+ 
+@@ -1526,6 +1527,7 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 		queue->cmnd_capsule_len = sizeof(struct nvme_command) +
+ 						NVME_TCP_ADMIN_CCSZ;
+ 
++	pr_info("Random test print\n");
+ 	ret = sock_create(ctrl->addr.ss_family, SOCK_STREAM,
+ 			IPPROTO_TCP, &queue->sock);
+ 	if (ret) {
+-- 
+2.37.2
+
+
+From 644d9f7bfc024296804339c76009630cd2937ca4 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Thu, 5 Oct 2023 14:45:52 +0000
+Subject: [PATCH 02/17] Change Sockets to HOMA
+
+---
+ drivers/nvme/host/tcp.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 693e7f63240b..2f94db8a066a 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1521,15 +1521,21 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 	mutex_init(&queue->send_mutex);
+ 	INIT_WORK(&queue->io_work, nvme_tcp_io_work);
+ 
+-	if (qid > 0)
++	if (qid > 0){
+ 		queue->cmnd_capsule_len = nctrl->ioccsz * 16;
++	ret = sock_create(ctrl->addr.ss_family, SOCK_DGRAM,
++			IPPROTO_HOMA, &queue->sock);
++
++	}
+ 	else
++	{
+ 		queue->cmnd_capsule_len = sizeof(struct nvme_command) +
+ 						NVME_TCP_ADMIN_CCSZ;
++	ret = sock_create(ctrl->addr.ss_family, SOCK_DGRAM,
++			IPPROTO_HOMA, &queue->sock);
++	}
+ 
+ 	pr_info("Random test print\n");
+-	ret = sock_create(ctrl->addr.ss_family, SOCK_STREAM,
+-			IPPROTO_TCP, &queue->sock);
+ 	if (ret) {
+ 		dev_err(nctrl->device,
+ 			"failed to create socket: %d\n", ret);
+-- 
+2.37.2
+
+
+From bcea427e6302c7ab332b1743fbbd4294ea1b1ecd Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Thu, 5 Oct 2023 15:16:56 +0000
+Subject: [PATCH 03/17]  Set Up Homa Socket
+
+---
+ drivers/nvme/host/tcp.c | 33 +++++++++++++++------------------
+ 1 file changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 2f94db8a066a..7dd1234c8cf9 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -116,6 +116,7 @@ enum nvme_tcp_recv_state {
+ struct nvme_tcp_ctrl;
+ struct nvme_tcp_queue {
+ 	struct socket		*sock;
++	struct homa_set_buf_args homa_args;
+ 	struct work_struct	io_work;
+ 	int			io_cpu;
+ 
+@@ -173,6 +174,8 @@ struct nvme_tcp_ctrl {
+ 	u32			io_queues[HCTX_MAX_TYPES];
+ };
+ 
++int homa_bufsize = 64 * HOMA_BPAGE_SIZE;
++
+ static LIST_HEAD(nvme_tcp_ctrl_list);
+ static DEFINE_MUTEX(nvme_tcp_ctrl_mutex);
+ static struct workqueue_struct *nvme_tcp_wq;
+@@ -1516,6 +1519,9 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 
+ 	mutex_init(&queue->queue_lock);
+ 	queue->ctrl = ctrl;
++	char *homa_buf_region = kzalloc(homa_bufsize, GFP_KERNEL);
++	queue->homa_args.start = homa_buf_region;
++	queue->homa_args.length= homa_buf_region;
+ 	init_llist_head(&queue->req_list);
+ 	INIT_LIST_HEAD(&queue->send_list);
+ 	mutex_init(&queue->send_mutex);
+@@ -1535,36 +1541,25 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 			IPPROTO_HOMA, &queue->sock);
+ 	}
+ 
+-	pr_info("Random test print\n");
+ 	if (ret) {
+ 		dev_err(nctrl->device,
+ 			"failed to create socket: %d\n", ret);
+ 		goto err_destroy_mutex;
+ 	}
+ 
+-	nvme_tcp_reclassify_socket(queue->sock);
+-
+-	/* Single syn retry */
+-	tcp_sock_set_syncnt(queue->sock->sk, 1);
+-
+-	/* Set TCP no delay */
+-	tcp_sock_set_nodelay(queue->sock->sk);
+-
+ 	/*
+ 	 * Cleanup whatever is sitting in the TCP transmit queue on socket
+ 	 * close. This is done to prevent stale data from being sent should
+ 	 * the network connection be restored before TCP times out.
+ 	 */
+-	sock_no_linger(queue->sock->sk);
+-
+-	if (so_priority > 0)
+-		sock_set_priority(queue->sock->sk, so_priority);
++	/* Set 10 seconds timeout for icresp recvmsg */
++	ret = queue->sock->ops->setsockopt(queue->sock, IPPROTO_HOMA, SO_HOMA_SET_BUF, 
++	KERNEL_SOCKPTR(&(queue->homa_args)), sizeof((queue->homa_args)));
+ 
+-	/* Set socket type of service */
+-	if (nctrl->opts->tos >= 0)
+-		ip_sock_set_tos(queue->sock->sk, nctrl->opts->tos);
++	if(ret < 0){
++		goto err_sock;
++	}
+ 
+-	/* Set 10 seconds timeout for icresp recvmsg */
+ 	queue->sock->sk->sk_rcvtimeo = 10 * HZ;
+ 
+ 	queue->sock->sk->sk_allocation = GFP_ATOMIC;
+@@ -1624,13 +1619,15 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 	dev_dbg(nctrl->device, "connecting queue %d\n",
+ 			nvme_tcp_queue_id(queue));
+ 
++	
++	/*
+ 	ret = kernel_connect(queue->sock, (struct sockaddr *)&ctrl->addr,
+ 		sizeof(ctrl->addr), 0);
+ 	if (ret) {
+ 		dev_err(nctrl->device,
+ 			"failed to connect socket: %d\n", ret);
+ 		goto err_rcv_pdu;
+-	}
++	}*/
+ 
+ 	ret = nvme_tcp_init_connection(queue);
+ 	if (ret)
+-- 
+2.37.2
+
+
+From 4ce35646faa560903fe1b45ac0f9c28437564f9b Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Thu, 5 Oct 2023 16:03:16 +0000
+Subject: [PATCH 04/17] Modify ICREQ and ICRESP routes to work with HOMA
+
+---
+ drivers/nvme/host/tcp.c | 37 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 34 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 7dd1234c8cf9..e06856e38642 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1355,10 +1355,13 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	struct nvme_tcp_icreq_pdu *icreq;
+ 	struct nvme_tcp_icresp_pdu *icresp;
+ 	struct msghdr msg = {};
++	struct homa_sendmsg_args homa_args;
+ 	struct kvec iov;
++	sockaddr_in_union source;
+ 	bool ctrl_hdgst, ctrl_ddgst;
+ 	u32 maxh2cdata;
+ 	int ret;
++	struct homa_recvmsg_args *homa_recv_args;
+ 
+ 	icreq = kzalloc(sizeof(*icreq), GFP_KERNEL);
+ 	if (!icreq)
+@@ -1382,20 +1385,48 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	if (queue->data_digest)
+ 		icreq->digest |= NVME_TCP_DATA_DIGEST_ENABLE;
+ 
++	memset(&homa_args, 0, sizeof(homa_args));
++	homa_args.completion_cookie = (int) &(msg);
++	homa_args.id = 0;
++
++	msg.msg_name = &(queue->ctrl->addr);
++	msg.msg_namelen = sizeof(queue->ctrl->addr);
++	msg.msg_control = &homa_args;
++	msg.msg_controllen = sizeof(homa_args);
++	msg.msg_control_is_user = false;
++
++
+ 	iov.iov_base = icreq;
+ 	iov.iov_len = sizeof(*icreq);
+ 	ret = kernel_sendmsg(queue->sock, &msg, &iov, 1, iov.iov_len);
+ 	if (ret < 0)
+ 		goto free_icresp;
+ 
++	homa_recv_args = kzalloc(sizeof(*homa_recv_args), GFP_KERNEL);
++	homa_recv_args->flags |= HOMA_RECVMSG_RESPONSE;
++	homa_recv_args->num_bpages = 0;
++
+ 	memset(&msg, 0, sizeof(msg));
++	msg.msg_name = &(source);
++	msg.msg_namelen = sizeof(source);
++	msg.msg_control = homa_recv_args;
++	msg.msg_controllen = sizeof(*homa_recv_args);
+ 	iov.iov_base = icresp;
+ 	iov.iov_len = sizeof(*icresp);
+-	ret = kernel_recvmsg(queue->sock, &msg, &iov, 1,
+-			iov.iov_len, msg.msg_flags);
+-	if (ret < 0)
++	int recv_msg_len = sock_recvmsg(queue->sock, &msg , msg.msg_flags);
++	if (recv_msg_len < 0)
+ 		goto free_icresp;
+ 
++	int offset = 0;
++	for(uint32_t i = 0; i < homa_recv_args->num_bpages; i++){
++		size_t len = ((recv_msg_len > HOMA_BPAGE_SIZE) ? 
++		HOMA_BPAGE_SIZE :
++		 recv_msg_len);
++		 memcpy(icresp + offset, queue->homa_args.start + homa_recv_args->bpage_offsets[i], len);
++		 offset += len;
++		 recv_msg_len -= len;
++	}
++
+ 	ret = -EINVAL;
+ 	if (icresp->hdr.type != nvme_tcp_icresp) {
+ 		pr_err("queue %d: bad type returned %d\n",
+-- 
+2.37.2
+
+
+From 40d179ac6b66b68bdd2f803377aca6b2c90415d2 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:41:48 +0000
+Subject: [PATCH 05/17] Fix Homa Variable
+
+---
+ drivers/nvme/host/tcp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index e06856e38642..a6ea7993f6dd 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1552,7 +1552,7 @@ static int nvme_tcp_alloc_queue(struct nvme_ctrl *nctrl, int qid)
+ 	queue->ctrl = ctrl;
+ 	char *homa_buf_region = kzalloc(homa_bufsize, GFP_KERNEL);
+ 	queue->homa_args.start = homa_buf_region;
+-	queue->homa_args.length= homa_buf_region;
++	queue->homa_args.length= homa_bufsize;
+ 	init_llist_head(&queue->req_list);
+ 	INIT_LIST_HEAD(&queue->send_list);
+ 	mutex_init(&queue->send_mutex);
+-- 
+2.37.2
+
+
+From 07c67ef96454bfaf4100fa76f05da6c50ef46264 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:44:49 +0000
+Subject: [PATCH 06/17] Change homa_recv_args in icresp to Statically Defined
+ Memory
+
+---
+ drivers/nvme/host/tcp.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index a6ea7993f6dd..f63c86dc8bd4 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1361,7 +1361,7 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	bool ctrl_hdgst, ctrl_ddgst;
+ 	u32 maxh2cdata;
+ 	int ret;
+-	struct homa_recvmsg_args *homa_recv_args;
++	struct homa_recvmsg_args homa_recv_args;
+ 
+ 	icreq = kzalloc(sizeof(*icreq), GFP_KERNEL);
+ 	if (!icreq)
+@@ -1402,27 +1402,27 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	if (ret < 0)
+ 		goto free_icresp;
+ 
+-	homa_recv_args = kzalloc(sizeof(*homa_recv_args), GFP_KERNEL);
+-	homa_recv_args->flags |= HOMA_RECVMSG_RESPONSE;
+-	homa_recv_args->num_bpages = 0;
++	memset(&homa_recv_args, 0, sizeof(homa_recv_args));
++	homa_recv_args.flags |= HOMA_RECVMSG_RESPONSE;
+ 
+ 	memset(&msg, 0, sizeof(msg));
+ 	msg.msg_name = &(source);
+ 	msg.msg_namelen = sizeof(source);
+-	msg.msg_control = homa_recv_args;
+-	msg.msg_controllen = sizeof(*homa_recv_args);
++	msg.msg_control = &homa_recv_args;
++	msg.msg_controllen = sizeof(homa_recv_args);
+ 	iov.iov_base = icresp;
+ 	iov.iov_len = sizeof(*icresp);
+ 	int recv_msg_len = sock_recvmsg(queue->sock, &msg , msg.msg_flags);
++	pr_info("len of icresp recvmsg is %d\n", recv_msg_len);
+ 	if (recv_msg_len < 0)
+ 		goto free_icresp;
+ 
+ 	int offset = 0;
+-	for(uint32_t i = 0; i < homa_recv_args->num_bpages; i++){
++	for(uint32_t i = 0; i < homa_recv_args.num_bpages; i++){
+ 		size_t len = ((recv_msg_len > HOMA_BPAGE_SIZE) ? 
+ 		HOMA_BPAGE_SIZE :
+ 		 recv_msg_len);
+-		 memcpy(icresp + offset, queue->homa_args.start + homa_recv_args->bpage_offsets[i], len);
++		 memcpy(icresp + offset, queue->homa_args.start + homa_recv_args.bpage_offsets[i], len);
+ 		 offset += len;
+ 		 recv_msg_len -= len;
+ 	}
+-- 
+2.37.2
+
+
+From 3bee13ebc6a330a696df696189fd9462d3522039 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:47:08 +0000
+Subject: [PATCH 07/17] Add pr_infos to Log Info in the io_work Function
+
+---
+ drivers/nvme/host/tcp.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index f63c86dc8bd4..3629b99f1428 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1238,12 +1238,15 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 	unsigned long deadline = jiffies + msecs_to_jiffies(1);
+ 
+ 	do {
++		pr_info("In the io_work path\n");
+ 		bool pending = false;
+ 		int result;
+ 
+ 		if (mutex_trylock(&queue->send_mutex)) {
+ 			result = nvme_tcp_try_send(queue);
+ 			mutex_unlock(&queue->send_mutex);
++			pr_info("send result is %d\n", result);
++			//should check the value here
+ 			if (result > 0)
+ 				pending = true;
+ 			else if (unlikely(result < 0))
+@@ -1251,6 +1254,7 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 		}
+ 
+ 		result = nvme_tcp_try_recv(queue);
++		pr_info("result is %d\n", result);
+ 		if (result > 0)
+ 			pending = true;
+ 		else if (unlikely(result < 0))
+@@ -1261,6 +1265,7 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 
+ 	} while (!time_after(jiffies, deadline)); /* quota is exhausted */
+ 
++	pr_info("Entering io work queue after loop\n");
+ 	queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ }
+ 
+-- 
+2.37.2
+
+
+From 7d07e87dbfe494cd4aef661f1fc6a6ac43cb94ac Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:50:39 +0000
+Subject: [PATCH 08/17] Print Statements To Track Where We Enter The io_work
+ Function From
+
+---
+ drivers/nvme/host/tcp.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 3629b99f1428..478b02dc5796 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -358,8 +358,11 @@ static inline void nvme_tcp_queue_request(struct nvme_tcp_request *req,
+ 		mutex_unlock(&queue->send_mutex);
+ 	}
+ 
+-	if (last && nvme_tcp_queue_more(queue))
++	if (last && nvme_tcp_queue_more(queue)){
++		pr_info("entering io_work through nvme_tcp_queue_request\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
++
++	}
+ }
+ 
+ static void nvme_tcp_process_req_list(struct nvme_tcp_queue *queue)
+@@ -930,8 +933,10 @@ static void nvme_tcp_data_ready(struct sock *sk)
+ 	read_lock_bh(&sk->sk_callback_lock);
+ 	queue = sk->sk_user_data;
+ 	if (likely(queue && queue->rd_enabled) &&
+-	    !test_bit(NVME_TCP_Q_POLLING, &queue->flags))
++	    !test_bit(NVME_TCP_Q_POLLING, &queue->flags)){
++	    	pr_info("Entering io work queue through skread\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
++	    }
+ 	read_unlock_bh(&sk->sk_callback_lock);
+ }
+ 
+-- 
+2.37.2
+
+
+From fd796b6eda807577b34f9e0672094b6213aab603 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:52:20 +0000
+Subject: [PATCH 09/17] Write Print Function To Track Entry Into io_work
+ Function From nvme_tcp_commit_rqs
+
+---
+ drivers/nvme/host/tcp.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 478b02dc5796..3a8222322241 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -2424,8 +2424,10 @@ static void nvme_tcp_commit_rqs(struct blk_mq_hw_ctx *hctx)
+ {
+ 	struct nvme_tcp_queue *queue = hctx->driver_data;
+ 
+-	if (!llist_empty(&queue->req_list))
++	if (!llist_empty(&queue->req_list)){
++		pr_info("entering io workqueue through nvme_tcp_commit_rqs\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
++	}
+ }
+ 
+ static blk_status_t nvme_tcp_queue_rq(struct blk_mq_hw_ctx *hctx,
+-- 
+2.37.2
+
+
+From 9f4680fed7bc8e544d89dc795e317ce3063d5675 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 14:57:44 +0000
+Subject: [PATCH 10/17] Modify Sending Functions to Send  Data Over Homa for
+ Command PDUs and Data
+
+---
+ drivers/nvme/host/tcp.c | 114 +++++++++++++++++++++++++---------------
+ 1 file changed, 73 insertions(+), 41 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 3a8222322241..9cd1f64ec934 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -983,6 +983,7 @@ static void nvme_tcp_state_change(struct sock *sk)
+ 
+ static inline void nvme_tcp_done_send_req(struct nvme_tcp_queue *queue)
+ {
++	pr_info("Finished sending request\n");
+ 	queue->request = NULL;
+ }
+ 
+@@ -999,17 +1000,19 @@ static void nvme_tcp_fail_request(struct nvme_tcp_request *req)
+ 	}
+ }
+ 
+-static int nvme_tcp_try_send_data(struct nvme_tcp_request *req)
++static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *pdu_bvec)
+ {
+ 	struct nvme_tcp_queue *queue = req->queue;
+ 	int req_data_len = req->data_len;
+ 	u32 h2cdata_left = req->h2cdata_left;
++	int number_of_segments = req->iter.nr_segs + 1;
++	size_t total_count = req->iter.count;
++	struct bio_vec *bvecs = kmalloc(sizeof(struct bio_vec) * number_of_segments, GFP_KERNEL);
++	bvecs[0] = *pdu_bvec;
++	int n = 1;
+ 
+-	while (true) {
++	while (n < req->iter.nr_segs + 1) {
+ 		struct bio_vec bvec;
+-		struct msghdr msg = {
+-			.msg_flags = MSG_DONTWAIT | MSG_SPLICE_PAGES,
+-		};
+ 		struct page *page = nvme_tcp_req_cur_page(req);
+ 		size_t offset = nvme_tcp_req_cur_offset(req);
+ 		size_t len = nvme_tcp_req_cur_length(req);
+@@ -1017,34 +1020,47 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req)
+ 		int req_data_sent = req->data_sent;
+ 		int ret;
+ 
+-		if (last && !queue->data_digest && !nvme_tcp_queue_more(queue))
++		/*if (last && !queue->data_digest && !nvme_tcp_queue_more(queue))
+ 			msg.msg_flags |= MSG_EOR;
+ 		else
+ 			msg.msg_flags |= MSG_MORE;
+ 
+-		if (!sendpage_ok(page))
+-			msg.msg_flags &= ~MSG_SPLICE_PAGES;
++			Gonna have to figure out a way to make the nvme_tcp_queue more work*/
+ 
+ 		bvec_set_page(&bvec, page, len, offset);
+-		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, len);
+-		ret = sock_sendmsg(queue->sock, &msg);
+-		if (ret <= 0)
+-			return ret;
++		bvecs[n] = bvec;
+ 
+ 		if (queue->data_digest)
+ 			nvme_tcp_ddgst_update(queue->snd_hash, page,
+-					offset, ret);
++					offset, len);
+ 
+ 		/*
+ 		 * update the request iterator except for the last payload send
+ 		 * in the request where we don't want to modify it as we may
+ 		 * compete with the RX path completing the request.
+ 		 */
+-		if (req_data_sent + ret < req_data_len)
+-			nvme_tcp_advance_req(req, ret);
++		if (req_data_sent + len < req_data_len)
++			nvme_tcp_advance_req(req, len);
+ 
+ 		/* fully successful last send in current PDU */
+-		if (last && ret == len) {
++		if (last) {
++			struct msghdr msg = {
++				.msg_flags = MSG_DONTWAIT ,
++			};
++			struct homa_sendmsg_args homa_args;
++			homa_args.completion_cookie = (int) &(msg);
++			homa_args.id = 0;
++			msg.msg_name = &(queue->ctrl->addr);
++			msg.msg_namelen = sizeof(queue->ctrl->addr);
++			msg.msg_control = &homa_args;
++			msg.msg_controllen = sizeof(homa_args);
++			msg.msg_control_is_user = false;
++			iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, bvecs, number_of_segments, total_count);
++			ret = sock_sendmsg(queue->sock, &msg);
++			if (ret < 0){
++				kfree(bvecs);
++				return ret;
++			}
+ 			if (queue->data_digest) {
+ 				nvme_tcp_ddgst_final(queue->snd_hash,
+ 					&req->ddgst);
+@@ -1056,51 +1072,64 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req)
+ 				else
+ 					nvme_tcp_done_send_req(queue);
+ 			}
++			kfree(bvecs);
+ 			return 1;
+ 		}
++		n++;
+ 	}
++	kfree(bvecs);
+ 	return -EAGAIN;
+ }
+ 
+-static int nvme_tcp_try_send_cmd_pdu(struct nvme_tcp_request *req)
++static int nvme_tcp_try_send_cmd_pdu(struct nvme_tcp_request *req, struct bio_vec *cmd_pdu_bvec)
+ {
+ 	struct nvme_tcp_queue *queue = req->queue;
+ 	struct nvme_tcp_cmd_pdu *pdu = nvme_tcp_req_cmd_pdu(req);
+-	struct bio_vec bvec;
+-	struct msghdr msg = { .msg_flags = MSG_DONTWAIT | MSG_SPLICE_PAGES, };
+ 	bool inline_data = nvme_tcp_has_inline_data(req);
+ 	u8 hdgst = nvme_tcp_hdgst_len(queue);
+ 	int len = sizeof(*pdu) + hdgst - req->offset;
+ 	int ret;
+ 
+-	if (inline_data || nvme_tcp_queue_more(queue))
+-		msg.msg_flags |= MSG_MORE;
+-	else
+-		msg.msg_flags |= MSG_EOR;
++	bvec_set_virt(cmd_pdu_bvec, (void *)pdu + req->offset, len);
++	//We dont care about nvme_tcp_queue_more for now
++	//it's purpose is probably to allow multiple pdus to be sent in one command
++	//but we are only sending one pdu at a time in homas case
++	// so we probably can do the nvme_tcp_queue_more earlier on in the send flow?
++	if (inline_data){
++		pr_info("We have inline data to send!\n");
++		req->state = NVME_TCP_SEND_DATA;
++		if (queue->data_digest)
++			crypto_ahash_init(queue->snd_hash);;
+ 
+-	if (queue->hdr_digest && !req->offset)
++		return 1;
++	}
++
++	/*if (queue->hdr_digest && !req->offset)
+ 		nvme_tcp_hdgst(queue->snd_hash, pdu, sizeof(*pdu));
++		gonna have to see where this one goes*/
+ 
+-	bvec_set_virt(&bvec, (void *)pdu + req->offset, len);
+-	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, len);
++	struct msghdr msg = { .msg_flags = MSG_DONTWAIT };
++	struct homa_sendmsg_args homa_args;
++	homa_args.completion_cookie = (int) &(msg);
++	homa_args.id = 0;
++	msg.msg_name = &(queue->ctrl->addr);
++	msg.msg_namelen = sizeof(queue->ctrl->addr);
++	msg.msg_control = &homa_args;
++	msg.msg_controllen = sizeof(homa_args);
++	msg.msg_control_is_user = false;
++	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, cmd_pdu_bvec, 1, len);
+ 	ret = sock_sendmsg(queue->sock, &msg);
+-	if (unlikely(ret <= 0))
++	if (unlikely(ret < 0))
+ 		return ret;
+ 
+-	len -= ret;
+-	if (!len) {
+-		if (inline_data) {
+-			req->state = NVME_TCP_SEND_DATA;
+-			if (queue->data_digest)
+-				crypto_ahash_init(queue->snd_hash);
+-		} else {
++
++	pr_info("ret is %d\n", ret);
+ 			nvme_tcp_done_send_req(queue);
+-		}
+ 		return 1;
+-	}
+-	req->offset += ret;
++	//the below line was there if we didn't send the whole message, but that can't be the case
++	//with homa. Will remove in future most likely
++	//req->offset += ret;
+ 
+-	return -EAGAIN;
+ }
+ 
+ static int nvme_tcp_try_send_data_pdu(struct nvme_tcp_request *req)
+@@ -1175,17 +1204,20 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	struct nvme_tcp_request *req;
+ 	unsigned int noreclaim_flag;
+ 	int ret = 1;
++	struct bio_vec pdu;
+ 
+ 	if (!queue->request) {
+ 		queue->request = nvme_tcp_fetch_request(queue);
+-		if (!queue->request)
++		if (!queue->request){
++			pr_info("Got no request\n");
+ 			return 0;
++		}
+ 	}
+ 	req = queue->request;
+ 
+ 	noreclaim_flag = memalloc_noreclaim_save();
+ 	if (req->state == NVME_TCP_SEND_CMD_PDU) {
+-		ret = nvme_tcp_try_send_cmd_pdu(req);
++		ret = nvme_tcp_try_send_cmd_pdu(req, &pdu);
+ 		if (ret <= 0)
+ 			goto done;
+ 		if (!nvme_tcp_has_inline_data(req))
+@@ -1199,7 +1231,7 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	}
+ 
+ 	if (req->state == NVME_TCP_SEND_DATA) {
+-		ret = nvme_tcp_try_send_data(req);
++		ret = nvme_tcp_try_send_data(req, &pdu);
+ 		if (ret <= 0)
+ 			goto done;
+ 	}
+-- 
+2.37.2
+
+
+From 9f9ad81509221822250415e40736c5ce22f98422 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 15:30:45 +0000
+Subject: [PATCH 11/17] Enable Receiving over HOMA Including Reading From the
+ Buffer Pool
+
+---
+ drivers/nvme/host/tcp.c | 140 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 112 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 9cd1f64ec934..02c5b507b2f9 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -201,6 +201,54 @@ static inline struct blk_mq_tags *nvme_tcp_tagset(struct nvme_tcp_queue *queue)
+ 		return queue->ctrl->admin_tag_set.tags[queue_idx];
+ 	return queue->ctrl->tag_set.tags[queue_idx - 1];
+ }
++static int copy_from_homa_pool(struct homa_recvmsg_args *homa_recv_args, int len_to_copy, unsigned int *homa_offset,
++	struct nvme_tcp_queue *queue, void *copy_to){
++
++	int data_offset = *homa_offset & (HOMA_BPAGE_SIZE - 1);
++	int page_offset = (*homa_offset / HOMA_BPAGE_SIZE);	
++	int offset = 0;
++	pr_info("offset we have received is: %u, data offset is: %d, page offset is:%d\n", offset, data_offset,page_offset);
++
++	/*Set the iterating variable to the remaiing number of pages to go through*/
++	for(uint32_t i = (page_offset); (i < homa_recv_args->num_bpages || len_to_copy > 0); i++){
++	size_t len = ((len_to_copy > HOMA_BPAGE_SIZE) ? 
++	HOMA_BPAGE_SIZE :
++		len_to_copy);
++		memcpy(copy_to+ offset, queue->homa_args.start+ homa_recv_args->bpage_offsets[i] + data_offset, len);
++		offset += len;
++		/*set the data offset to 0 as we only need the modulo value for the first loop*/
++		data_offset = 0;
++		len_to_copy -= len;
++	}
++	/*update the homa offset*/
++	*homa_offset += offset;
++
++
++	return 0;
++}
++
++static int iter_copy_from_homa_pool(struct homa_recvmsg_args *homa_recv_args, int len_to_copy, unsigned int *homa_offset,
++	struct nvme_tcp_queue *queue, struct iov_iter *iter){
++		
++	int data_offset = *homa_offset & (HOMA_BPAGE_SIZE - 1);
++	int page_offset = (*homa_offset / HOMA_BPAGE_SIZE);	
++		/*int i should be the modulo of offset with HOMA_BPAGE_Size*/
++		/*Also would need to do something to allow*/
++	/*Set the iterating variable to the remaiing number of pages to go through*/
++	for(uint32_t i = (page_offset); (i < homa_recv_args->num_bpages || len_to_copy != 0); i++){
++	size_t len = ((len_to_copy > HOMA_BPAGE_SIZE) ? 
++	HOMA_BPAGE_SIZE :
++		len_to_copy);
++		copy_to_iter(queue->homa_args.start + homa_recv_args->bpage_offsets[0] + data_offset, len,iter);
++		*homa_offset += len;
++
++		len_to_copy -= len;
++	}
++
++
++	return 0;
++
++}
+ 
+ static inline u8 nvme_tcp_hdgst_len(struct nvme_tcp_queue *queue)
+ {
+@@ -714,23 +762,23 @@ static int nvme_tcp_handle_r2t(struct nvme_tcp_queue *queue,
+ 	return 0;
+ }
+ 
+-static int nvme_tcp_recv_pdu(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+-		unsigned int *offset, size_t *len)
++static int nvme_tcp_recv_pdu(struct nvme_tcp_queue *queue, struct homa_recvmsg_args *homa_recv_args,
++		unsigned int *offset, int *len)
+ {
+ 	struct nvme_tcp_hdr *hdr;
+ 	char *pdu = queue->pdu;
++	pr_info("len to read is %d, and length of pdu remaining is %d\n", *len, queue->pdu_remaining);
+ 	size_t rcv_len = min_t(size_t, *len, queue->pdu_remaining);
+ 	int ret;
+ 
+-	ret = skb_copy_bits(skb, *offset,
+-		&pdu[queue->pdu_offset], rcv_len);
+-	if (unlikely(ret))
+-		return ret;
++	copy_from_homa_pool(homa_recv_args, rcv_len, offset, queue, pdu + queue->pdu_offset);
+ 
+ 	queue->pdu_remaining -= rcv_len;
+ 	queue->pdu_offset += rcv_len;
+-	*offset += rcv_len;
+ 	*len -= rcv_len;
++	/*these things can prolly be cleaned out later as we don't expect to loop multiple times
++	to read a pdu when using homa*/
++
+ 	if (queue->pdu_remaining)
+ 		return 0;
+ 
+@@ -748,6 +796,9 @@ static int nvme_tcp_recv_pdu(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+ 			return ret;
+ 	}
+ 
++	pr_info("Header type we have received is: %d\n", hdr->type);
++	pr_info("Packet length is:%d\n", hdr->plen);
++
+ 	switch (hdr->type) {
+ 	case nvme_tcp_c2h_data:
+ 		return nvme_tcp_handle_c2h_data(queue, (void *)queue->pdu);
+@@ -772,14 +823,16 @@ static inline void nvme_tcp_end_request(struct request *rq, u16 status)
+ 		nvme_complete_rq(rq);
+ }
+ 
+-static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+-			      unsigned int *offset, size_t *len)
++static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct homa_recvmsg_args *homa_recv_args,
++			      unsigned int *offset, int *len)
+ {
+ 	struct nvme_tcp_data_pdu *pdu = (void *)queue->pdu;
+ 	struct request *rq =
+ 		nvme_cid_to_rq(nvme_tcp_tagset(queue), pdu->command_id);
+ 	struct nvme_tcp_request *req = blk_mq_rq_to_pdu(rq);
+ 
++	pr_info("Data remaining to read: %zu\n", queue->data_remaining);
++
+ 	while (true) {
+ 		int recv_len, ret;
+ 
+@@ -808,12 +861,12 @@ static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+ 		recv_len = min_t(size_t, recv_len,
+ 				iov_iter_count(&req->iter));
+ 
+-		if (queue->data_digest)
+-			ret = skb_copy_and_hash_datagram_iter(skb, *offset,
+-				&req->iter, recv_len, queue->rcv_hash);
++		if (queue->data_digest)/*return success for now*/
++			ret = 0;/*skb_copy_and_hash_datagram_iter(skb, *offset,
++				&req->iter, recv_len, queue->rcv_hash);*/
+ 		else
+-			ret = skb_copy_datagram_iter(skb, *offset,
+-					&req->iter, recv_len);
++			ret = iter_copy_from_homa_pool(homa_recv_args, recv_len, offset,queue, 
++			&req->iter);
+ 		if (ret) {
+ 			dev_err(queue->ctrl->ctrl.device,
+ 				"queue %d failed to copy request %#x data",
+@@ -822,7 +875,7 @@ static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+ 		}
+ 
+ 		*len -= recv_len;
+-		*offset += recv_len;
++		/**offset += recv_len; I dont think we need this */
+ 		queue->data_remaining -= recv_len;
+ 	}
+ 
+@@ -836,6 +889,7 @@ static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct sk_buff *skb,
+ 						le16_to_cpu(req->status));
+ 				queue->nr_cqe++;
+ 			}
++			pr_info("here we comee!\n");
+ 			nvme_tcp_init_recv_ctx(queue);
+ 		}
+ 	}
+@@ -888,12 +942,12 @@ static int nvme_tcp_recv_ddgst(struct nvme_tcp_queue *queue,
+ 	return 0;
+ }
+ 
+-static int nvme_tcp_recv_skb(read_descriptor_t *desc, struct sk_buff *skb,
+-			     unsigned int offset, size_t len)
++static int nvme_tcp_recv(struct nvme_tcp_queue *queue, int len, struct homa_recvmsg_args 
++*homa_recv_args)
+ {
+-	struct nvme_tcp_queue *queue = desc->arg.data;
+-	size_t consumed = len;
++	//size_t consumed = len;
+ 	int result;
++	int homa_pool_offset = 0;
+ 
+ 	if (unlikely(!queue->rd_enabled))
+ 		return -EFAULT;
+@@ -901,13 +955,15 @@ static int nvme_tcp_recv_skb(read_descriptor_t *desc, struct sk_buff *skb,
+ 	while (len) {
+ 		switch (nvme_tcp_recv_state(queue)) {
+ 		case NVME_TCP_RECV_PDU:
+-			result = nvme_tcp_recv_pdu(queue, skb, &offset, &len);
++			pr_info("Receving pdu\n");
++			result = nvme_tcp_recv_pdu(queue, homa_recv_args, &homa_pool_offset, &len);
+ 			break;
+ 		case NVME_TCP_RECV_DATA:
+-			result = nvme_tcp_recv_data(queue, skb, &offset, &len);
++			pr_info("Receiving some data!\n");
++			result = nvme_tcp_recv_data(queue, homa_recv_args , &homa_pool_offset, &len);
+ 			break;
+ 		case NVME_TCP_RECV_DDGST:
+-			result = nvme_tcp_recv_ddgst(queue, skb, &offset, &len);
++			result = 0 ;/*nvme_tcp_recv_ddgst(queue, skb, &offset, &len);*/
+ 			break;
+ 		default:
+ 			result = -EFAULT;
+@@ -921,7 +977,7 @@ static int nvme_tcp_recv_skb(read_descriptor_t *desc, struct sk_buff *skb,
+ 		}
+ 	}
+ 
+-	return consumed;
++	return 0;
+ }
+ 
+ static void nvme_tcp_data_ready(struct sock *sk)
+@@ -1252,20 +1308,48 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	return ret;
+ }
+ 
++
+ static int nvme_tcp_try_recv(struct nvme_tcp_queue *queue)
+ {
+-	struct socket *sock = queue->sock;
++
++	struct msghdr msg = {};
++	struct homa_recvmsg_args homa_recv_args;
++	memset(&homa_recv_args, 0, sizeof(homa_recv_args));
++
++	sockaddr_in_union source;
++
++
++	homa_recv_args.flags = HOMA_RECVMSG_RESPONSE;
++	homa_recv_args.id = 0;
++
++	msg.msg_name = &(source);
++	msg.msg_namelen = sizeof(source);
++	msg.msg_control = &homa_recv_args;
++	msg.msg_controllen = sizeof(homa_recv_args);
++
++	int ret = sock_recvmsg(queue->sock, &msg, msg.msg_flags);
++	pr_info("ret is %d\n", ret);
++	if (ret<0)
++		return ret;
++
++	
++	ret = nvme_tcp_recv(queue, ret, &homa_recv_args);
++	/*struct socket *sock = queue->sock;
+ 	struct sock *sk = sock->sk;
+ 	read_descriptor_t rd_desc;
+ 	int consumed;
+ 
++
+ 	rd_desc.arg.data = queue;
+ 	rd_desc.count = 1;
+-	lock_sock(sk);
++	//lock_sock(sk);
+ 	queue->nr_cqe = 0;
+-	consumed = sock->ops->read_sock(sk, &rd_desc, nvme_tcp_recv_skb);
+-	release_sock(sk);
+-	return consumed;
++	//THIS NEEDS TO BE REMOVED
++	//consumed = sock->ops->read_sock(sk, &rd_desc, nvme_tcp_recv_skb);
++	//release_sock(sk);
++	return consumed;*/
++
++	return ret;
+ }
+ 
+ static void nvme_tcp_io_work(struct work_struct *w)
+-- 
+2.37.2
+
+
+From 2f4a28bab2f8aaf1497257f4a15afb76816ac9f5 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Sat, 4 Nov 2023 15:32:37 +0000
+Subject: [PATCH 12/17] Add Some More Logging Information
+
+---
+ drivers/nvme/host/tcp.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 02c5b507b2f9..0ef9bcf90ee7 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -376,6 +376,7 @@ static inline void nvme_tcp_send_all(struct nvme_tcp_queue *queue)
+ 
+ 	/* drain the send queue as much as we can... */
+ 	do {
++		pr_info("We are in the nvme_tcp_send_all path\n");
+ 		ret = nvme_tcp_try_send(queue);
+ 	} while (ret > 0);
+ }
+@@ -613,11 +614,15 @@ static int nvme_tcp_process_nvme_cqe(struct nvme_tcp_queue *queue,
+ 	}
+ 
+ 	req = blk_mq_rq_to_pdu(rq);
+-	if (req->status == cpu_to_le16(NVME_SC_SUCCESS))
++	if (req->status == cpu_to_le16(NVME_SC_SUCCESS)){
++		pr_info("request is a success!\n");
+ 		req->status = cqe->status;
++	}
+ 
+-	if (!nvme_try_complete_req(rq, req->status, cqe->result))
++	if (!nvme_try_complete_req(rq, req->status, cqe->result)){
++		pr_info("nvme_try_complete_req failed\n");
+ 		nvme_complete_rq(rq);
++	}
+ 	queue->nr_cqe++;
+ 
+ 	return 0;
+@@ -661,6 +666,7 @@ static int nvme_tcp_handle_comp(struct nvme_tcp_queue *queue,
+ 		struct nvme_tcp_rsp_pdu *pdu)
+ {
+ 	struct nvme_completion *cqe = &pdu->cqe;
++	pr_info("Received completion command id: %d\n", cqe->command_id);
+ 	int ret = 0;
+ 
+ 	/*
+@@ -676,6 +682,8 @@ static int nvme_tcp_handle_comp(struct nvme_tcp_queue *queue,
+ 	else
+ 		ret = nvme_tcp_process_nvme_cqe(queue, cqe);
+ 
++	pr_info("nvme_tcp_handle_comp returning %d\n", ret);
++
+ 	return ret;
+ }
+ 
+@@ -2564,6 +2572,7 @@ static blk_status_t nvme_tcp_queue_rq(struct blk_mq_hw_ctx *hctx,
+ 		return ret;
+ 
+ 	nvme_start_request(rq);
++	pr_info("Request we are queueing has fctype: %d and command id: %u\n", req->req.cmd->fabrics.fctype, req->req.cmd->fabrics.command_id);
+ 
+ 	nvme_tcp_queue_request(req, true, bd->last);
+ 
+-- 
+2.37.2
+
+
+From 8435cd402fcb8c93d01f0510a602427208351061 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 13 Nov 2023 18:13:03 +0000
+Subject: [PATCH 13/17] Add Queue Id to PDU
+
+---
+ drivers/nvme/host/tcp.c  | 23 ++++++++++++++---------
+ include/linux/nvme-tcp.h |  8 +++++---
+ 2 files changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 0ef9bcf90ee7..ff32b91ffc2a 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -715,6 +715,8 @@ static void nvme_tcp_setup_h2c_data_pdu(struct nvme_tcp_request *req)
+ 	data->hdr.pdo = data->hdr.hlen + hdgst;
+ 	data->hdr.plen =
+ 		cpu_to_le32(data->hdr.hlen + hdgst + req->pdu_len + ddgst);
++	data->hdr.queue_id = nvme_tcp_queue_id(queue);
++	pr_info("H2C PDU queue_id is: %d\n", data->hdr.queue_id);
+ 	data->ttag = req->ttag;
+ 	data->command_id = nvme_cid(rq);
+ 	data->data_offset = cpu_to_le32(req->h2cdata_offset);
+@@ -1511,6 +1513,7 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	icreq->hdr.hlen = sizeof(*icreq);
+ 	icreq->hdr.pdo = 0;
+ 	icreq->hdr.plen = cpu_to_le32(icreq->hdr.hlen);
++	icreq->hdr.queue_id =  nvme_tcp_queue_id(queue);
+ 	icreq->pfv = cpu_to_le16(NVME_TCP_PFV_1_0);
+ 	icreq->maxr2t = 0; /* single inflight r2t supported */
+ 	icreq->hpda = 0; /* no alignment constraint */
+@@ -2437,7 +2440,7 @@ static enum blk_eh_timer_return nvme_tcp_timeout(struct request *rq)
+ 	struct nvme_ctrl *ctrl = &req->queue->ctrl->ctrl;
+ 	struct nvme_tcp_cmd_pdu *pdu = nvme_tcp_req_cmd_pdu(req);
+ 	u8 opc = pdu->cmd.common.opcode, fctype = pdu->cmd.fabrics.fctype;
+-	int qid = nvme_tcp_queue_id(req->queue);
++	int qid = nvme_tcp_queue_id(req->queue);//double usage of qid here potential future clean up?
+ 
+ 	dev_warn(ctrl->device,
+ 		"queue %d: timeout cid %#x type %d opcode %#x (%s)\n",
+@@ -2522,6 +2525,8 @@ static blk_status_t nvme_tcp_setup_cmd_pdu(struct nvme_ns *ns,
+ 
+ 	pdu->hdr.type = nvme_tcp_cmd;
+ 	pdu->hdr.flags = 0;
++	pdu->hdr.queue_id =  nvme_tcp_queue_id(queue);
++	pr_info("The queue id is: %d\n", pdu->hdr.queue_id);
+ 	if (queue->hdr_digest)
+ 		pdu->hdr.flags |= NVME_TCP_F_HDGST;
+ 	if (queue->data_digest && req->pdu_len) {
+@@ -2800,14 +2805,14 @@ static struct nvmf_transport_ops nvme_tcp_transport = {
+ 
+ static int __init nvme_tcp_init_module(void)
+ {
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_hdr) != 8);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_cmd_pdu) != 72);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_data_pdu) != 24);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_rsp_pdu) != 24);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_r2t_pdu) != 24);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_icreq_pdu) != 128);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_icresp_pdu) != 128);
+-	BUILD_BUG_ON(sizeof(struct nvme_tcp_term_pdu) != 24);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_hdr) != 12);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_cmd_pdu) != 80);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_data_pdu) != 32);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_rsp_pdu) != 32);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_r2t_pdu) !=  32);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_icreq_pdu) != 132);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_icresp_pdu) != 132);
++	BUILD_BUG_ON(sizeof(struct nvme_tcp_term_pdu) != 32);
+ 
+ 	nvme_tcp_wq = alloc_workqueue("nvme_tcp_wq",
+ 			WQ_MEM_RECLAIM | WQ_HIGHPRI, 0);
+diff --git a/include/linux/nvme-tcp.h b/include/linux/nvme-tcp.h
+index 57ebe1267f7f..f577c09f3123 100644
+--- a/include/linux/nvme-tcp.h
++++ b/include/linux/nvme-tcp.h
+@@ -55,6 +55,7 @@ enum nvme_tcp_pdu_flags {
+ /**
+  * struct nvme_tcp_hdr - nvme tcp pdu common header
+  *
++ * @queue_id:	   pdu_origin_queue_id
+  * @type:          pdu type
+  * @flags:         pdu specific flags
+  * @hlen:          pdu header length
+@@ -62,6 +63,7 @@ enum nvme_tcp_pdu_flags {
+  * @plen:          pdu wire byte length
+  */
+ struct nvme_tcp_hdr {
++	__u8	queue_id;
+ 	__u8	type;
+ 	__u8	flags;
+ 	__u8	hlen;
+@@ -117,7 +119,7 @@ struct nvme_tcp_term_pdu {
+ 	__le16			fes;
+ 	__le16			feil;
+ 	__le16			feiu;
+-	__u8			rsvd[10];
++	__u8			rsvd[14];
+ };
+ 
+ /**
+@@ -158,7 +160,7 @@ struct nvme_tcp_r2t_pdu {
+ 	__u16			ttag;
+ 	__le32			r2t_offset;
+ 	__le32			r2t_length;
+-	__u8			rsvd[4];
++	__u8			rsvd[8];
+ };
+ 
+ /**
+@@ -176,7 +178,7 @@ struct nvme_tcp_data_pdu {
+ 	__u16			ttag;
+ 	__le32			data_offset;
+ 	__le32			data_length;
+-	__u8			rsvd[4];
++	__u8			rsvd[8];
+ };
+ 
+ union nvme_tcp_pdu {
+-- 
+2.37.2
+
+
+From 99688681db8d9ce954fba9df7f6bb4a45d407187 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 13 Nov 2023 18:13:50 +0000
+Subject: [PATCH 14/17] Print Amazing Debug Log Message!
+
+---
+ drivers/nvme/host/tcp.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index ff32b91ffc2a..ca3953a4a329 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -2577,7 +2577,12 @@ static blk_status_t nvme_tcp_queue_rq(struct blk_mq_hw_ctx *hctx,
+ 		return ret;
+ 
+ 	nvme_start_request(rq);
+-	pr_info("Request we are queueing has fctype: %d and command id: %u\n", req->req.cmd->fabrics.fctype, req->req.cmd->fabrics.command_id);
++	struct nvme_tcp_cmd_pdu *pdu = nvme_tcp_req_cmd_pdu(req);
++	u8 opc = pdu->cmd.common.opcode, fctype = pdu->cmd.fabrics.fctype;
++	int qid = nvme_tcp_queue_id(req->queue);
++	pr_info("the request with raw cid(%d) is on queue %d: ,cid: %#x ,type %d, opcode %#x (%s)\n",
++		req->req.cmd->common.command_id,qid, nvme_cid(rq), pdu->hdr.type,
++		opc, nvme_opcode_str(qid, opc, fctype));
+ 
+ 	nvme_tcp_queue_request(req, true, bd->last);
+ 
+-- 
+2.37.2
+
+
+From b7bc93d60f4c69d241873efb9e52cfddbf3a1ef7 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 13 Nov 2023 18:18:05 +0000
+Subject: [PATCH 15/17] Enable Passing Back Homa Recv Msg Args
+
+---
+ drivers/nvme/host/tcp.c | 29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index ca3953a4a329..7b94c656d8ff 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -117,6 +117,7 @@ struct nvme_tcp_ctrl;
+ struct nvme_tcp_queue {
+ 	struct socket		*sock;
+ 	struct homa_set_buf_args homa_args;
++	struct homa_recvmsg_args homa_recv_args;
+ 	struct work_struct	io_work;
+ 	int			io_cpu;
+ 
+@@ -1323,19 +1324,18 @@ static int nvme_tcp_try_recv(struct nvme_tcp_queue *queue)
+ {
+ 
+ 	struct msghdr msg = {};
+-	struct homa_recvmsg_args homa_recv_args;
+-	memset(&homa_recv_args, 0, sizeof(homa_recv_args));
++	struct homa_recvmsg_args *homa_recv_args = &queue->homa_recv_args;
+ 
+ 	sockaddr_in_union source;
+ 
+ 
+-	homa_recv_args.flags = HOMA_RECVMSG_RESPONSE;
+-	homa_recv_args.id = 0;
++	homa_recv_args->flags = HOMA_RECVMSG_RESPONSE;
++	homa_recv_args->id = 0;
+ 
+ 	msg.msg_name = &(source);
+ 	msg.msg_namelen = sizeof(source);
+-	msg.msg_control = &homa_recv_args;
+-	msg.msg_controllen = sizeof(homa_recv_args);
++	msg.msg_control = homa_recv_args;
++	msg.msg_controllen = sizeof(*homa_recv_args);
+ 
+ 	int ret = sock_recvmsg(queue->sock, &msg, msg.msg_flags);
+ 	pr_info("ret is %d\n", ret);
+@@ -1343,7 +1343,7 @@ static int nvme_tcp_try_recv(struct nvme_tcp_queue *queue)
+ 		return ret;
+ 
+ 	
+-	ret = nvme_tcp_recv(queue, ret, &homa_recv_args);
++	ret = nvme_tcp_recv(queue, ret, homa_recv_args);
+ 	/*struct socket *sock = queue->sock;
+ 	struct sock *sk = sock->sk;
+ 	read_descriptor_t rd_desc;
+@@ -1497,7 +1497,7 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	bool ctrl_hdgst, ctrl_ddgst;
+ 	u32 maxh2cdata;
+ 	int ret;
+-	struct homa_recvmsg_args homa_recv_args;
++	struct homa_recvmsg_args *homa_recv_args;
+ 
+ 	icreq = kzalloc(sizeof(*icreq), GFP_KERNEL);
+ 	if (!icreq)
+@@ -1539,14 +1539,15 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	if (ret < 0)
+ 		goto free_icresp;
+ 
+-	memset(&homa_recv_args, 0, sizeof(homa_recv_args));
+-	homa_recv_args.flags |= HOMA_RECVMSG_RESPONSE;
++	homa_recv_args = &queue->homa_recv_args;
++	homa_recv_args->flags |= HOMA_RECVMSG_RESPONSE;
++	homa_recv_args->id = 0;
+ 
+ 	memset(&msg, 0, sizeof(msg));
+ 	msg.msg_name = &(source);
+ 	msg.msg_namelen = sizeof(source);
+-	msg.msg_control = &homa_recv_args;
+-	msg.msg_controllen = sizeof(homa_recv_args);
++	msg.msg_control = homa_recv_args;
++	msg.msg_controllen = sizeof(*homa_recv_args);
+ 	iov.iov_base = icresp;
+ 	iov.iov_len = sizeof(*icresp);
+ 	int recv_msg_len = sock_recvmsg(queue->sock, &msg , msg.msg_flags);
+@@ -1555,11 +1556,11 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 		goto free_icresp;
+ 
+ 	int offset = 0;
+-	for(uint32_t i = 0; i < homa_recv_args.num_bpages; i++){
++	for(uint32_t i = 0; i < homa_recv_args->num_bpages; i++){
+ 		size_t len = ((recv_msg_len > HOMA_BPAGE_SIZE) ? 
+ 		HOMA_BPAGE_SIZE :
+ 		 recv_msg_len);
+-		 memcpy(icresp + offset, queue->homa_args.start + homa_recv_args.bpage_offsets[i], len);
++		 memcpy(icresp + offset, queue->homa_args.start + homa_recv_args->bpage_offsets[i], len);
+ 		 offset += len;
+ 		 recv_msg_len -= len;
+ 	}
+-- 
+2.37.2
+
+
+From fd8b0f503742bc0086db251908598d6e4cf6c6ac Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 13 Nov 2023 18:18:53 +0000
+Subject: [PATCH 16/17] Add R2T and H2C Functionality
+
+---
+ drivers/nvme/host/tcp.c | 38 ++++++++++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 7b94c656d8ff..82365e314db1 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -727,6 +727,7 @@ static void nvme_tcp_setup_h2c_data_pdu(struct nvme_tcp_request *req)
+ static int nvme_tcp_handle_r2t(struct nvme_tcp_queue *queue,
+ 		struct nvme_tcp_r2t_pdu *pdu)
+ {
++	pr_info("Handling R2T\n");
+ 	struct nvme_tcp_request *req;
+ 	struct request *rq;
+ 	u32 r2t_length = le32_to_cpu(pdu->r2t_length);
+@@ -764,6 +765,7 @@ static int nvme_tcp_handle_r2t(struct nvme_tcp_queue *queue,
+ 
+ 	req->pdu_len = 0;
+ 	req->h2cdata_left = r2t_length;
++	pr_info("Length given in r2t is %d\n", r2t_length);
+ 	req->h2cdata_offset = r2t_offset;
+ 	req->ttag = pdu->ttag;
+ 
+@@ -1015,6 +1017,7 @@ static void nvme_tcp_write_space(struct sock *sk)
+ 	queue = sk->sk_user_data;
+ 	if (likely(queue && sk_stream_is_writeable(sk))) {
+ 		clear_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
++		pr_info("entering io_work through write space!");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ 	}
+ 	read_unlock_bh(&sk->sk_callback_lock);
+@@ -1069,16 +1072,23 @@ static void nvme_tcp_fail_request(struct nvme_tcp_request *req)
+ 
+ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *pdu_bvec)
+ {
++	pr_info("sending some data\n");
+ 	struct nvme_tcp_queue *queue = req->queue;
++	struct request *rq = blk_mq_rq_from_pdu(req);
+ 	int req_data_len = req->data_len;
+ 	u32 h2cdata_left = req->h2cdata_left;
+-	int number_of_segments = req->iter.nr_segs + 1;
+-	size_t total_count = req->iter.count;
++	int number_of_segments = rq->nr_phys_segments + 1;
++	size_t total_count = req->pdu_len + pdu_bvec->bv_len ;
+ 	struct bio_vec *bvecs = kmalloc(sizeof(struct bio_vec) * number_of_segments, GFP_KERNEL);
+ 	bvecs[0] = *pdu_bvec;
+ 	int n = 1;
++	pr_info("Number o' segments to send:%d\n", number_of_segments);
+ 
+-	while (n < req->iter.nr_segs + 1) {
++	while (n < number_of_segments) {
++		int data_left = nvme_tcp_pdu_data_left(req);
++		int iov_iter_len = iov_iter_single_seg_count(&req->iter);
++		pr_info("We are in loop %d\n", n);
++		pr_info("We have %d data left in this pdu, we have %d data in our current iterator\n", data_left, iov_iter_len);
+ 		struct bio_vec bvec;
+ 		struct page *page = nvme_tcp_req_cur_page(req);
+ 		size_t offset = nvme_tcp_req_cur_offset(req);
+@@ -1111,6 +1121,7 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *
+ 
+ 		/* fully successful last send in current PDU */
+ 		if (last) {
++			pr_info("Last Page, lets send data!\n");
+ 			struct msghdr msg = {
+ 				.msg_flags = MSG_DONTWAIT ,
+ 			};
+@@ -1144,6 +1155,7 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *
+ 		}
+ 		n++;
+ 	}
++	pr_err("Failed to send said data:(\n");
+ 	kfree(bvecs);
+ 	return -EAGAIN;
+ }
+@@ -1199,7 +1211,7 @@ static int nvme_tcp_try_send_cmd_pdu(struct nvme_tcp_request *req, struct bio_ve
+ 
+ }
+ 
+-static int nvme_tcp_try_send_data_pdu(struct nvme_tcp_request *req)
++static int nvme_tcp_try_send_data_pdu(struct nvme_tcp_request *req, struct bio_vec *data_pdu_bvec)
+ {
+ 	struct nvme_tcp_queue *queue = req->queue;
+ 	struct nvme_tcp_data_pdu *pdu = nvme_tcp_req_data_pdu(req);
+@@ -1209,28 +1221,26 @@ static int nvme_tcp_try_send_data_pdu(struct nvme_tcp_request *req)
+ 	int len = sizeof(*pdu) - req->offset + hdgst;
+ 	int ret;
+ 
++	/*
+ 	if (queue->hdr_digest && !req->offset)
+ 		nvme_tcp_hdgst(queue->snd_hash, pdu, sizeof(*pdu));
+ 
+ 	if (!req->h2cdata_left)
+ 		msg.msg_flags |= MSG_SPLICE_PAGES;
++	*/
+ 
+-	bvec_set_virt(&bvec, (void *)pdu + req->offset, len);
+-	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, len);
++	bvec_set_virt(data_pdu_bvec, (void *)pdu + req->offset, len);
++	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, data_pdu_bvec, 1, len);
++	/*
+ 	ret = sock_sendmsg(queue->sock, &msg);
+ 	if (unlikely(ret <= 0))
+ 		return ret;
+-
+-	len -= ret;
+-	if (!len) {
++	*/
+ 		req->state = NVME_TCP_SEND_DATA;
+ 		if (queue->data_digest)
+ 			crypto_ahash_init(queue->snd_hash);
+ 		return 1;
+-	}
+-	req->offset += ret;
+ 
+-	return -EAGAIN;
+ }
+ 
+ static int nvme_tcp_try_send_ddgst(struct nvme_tcp_request *req)
+@@ -1276,7 +1286,7 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	if (!queue->request) {
+ 		queue->request = nvme_tcp_fetch_request(queue);
+ 		if (!queue->request){
+-			pr_info("Got no request\n");
++			pr_info("Got no request here\n");
+ 			return 0;
+ 		}
+ 	}
+@@ -1292,7 +1302,7 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	}
+ 
+ 	if (req->state == NVME_TCP_SEND_H2C_PDU) {
+-		ret = nvme_tcp_try_send_data_pdu(req);
++		ret = nvme_tcp_try_send_data_pdu(req, &pdu);
+ 		if (ret <= 0)
+ 			goto done;
+ 	}
+-- 
+2.37.2
+
+
+From c8c90283cd60326410e5e8fad926853175e81b80 Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 13 Nov 2023 18:32:31 +0000
+Subject: [PATCH 17/17] Change pr_infos to pr_debugs
+
+---
+ drivers/nvme/host/tcp.c | 67 +++++++++++++++++------------------------
+ 1 file changed, 27 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index 82365e314db1..1e0fe5b7fcc9 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -208,7 +208,6 @@ static int copy_from_homa_pool(struct homa_recvmsg_args *homa_recv_args, int len
+ 	int data_offset = *homa_offset & (HOMA_BPAGE_SIZE - 1);
+ 	int page_offset = (*homa_offset / HOMA_BPAGE_SIZE);	
+ 	int offset = 0;
+-	pr_info("offset we have received is: %u, data offset is: %d, page offset is:%d\n", offset, data_offset,page_offset);
+ 
+ 	/*Set the iterating variable to the remaiing number of pages to go through*/
+ 	for(uint32_t i = (page_offset); (i < homa_recv_args->num_bpages || len_to_copy > 0); i++){
+@@ -377,7 +376,7 @@ static inline void nvme_tcp_send_all(struct nvme_tcp_queue *queue)
+ 
+ 	/* drain the send queue as much as we can... */
+ 	do {
+-		pr_info("We are in the nvme_tcp_send_all path\n");
++		pr_debug("We are in the nvme_tcp_send_all path\n");
+ 		ret = nvme_tcp_try_send(queue);
+ 	} while (ret > 0);
+ }
+@@ -409,7 +408,7 @@ static inline void nvme_tcp_queue_request(struct nvme_tcp_request *req,
+ 	}
+ 
+ 	if (last && nvme_tcp_queue_more(queue)){
+-		pr_info("entering io_work through nvme_tcp_queue_request\n");
++		pr_debug("entering io_work through nvme_tcp_queue_request\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ 
+ 	}
+@@ -616,12 +615,12 @@ static int nvme_tcp_process_nvme_cqe(struct nvme_tcp_queue *queue,
+ 
+ 	req = blk_mq_rq_to_pdu(rq);
+ 	if (req->status == cpu_to_le16(NVME_SC_SUCCESS)){
+-		pr_info("request is a success!\n");
++		pr_debug("request is a success!\n");
+ 		req->status = cqe->status;
+ 	}
+ 
+ 	if (!nvme_try_complete_req(rq, req->status, cqe->result)){
+-		pr_info("nvme_try_complete_req failed\n");
++		pr_debug("nvme_try_complete_req failed\n");
+ 		nvme_complete_rq(rq);
+ 	}
+ 	queue->nr_cqe++;
+@@ -667,7 +666,7 @@ static int nvme_tcp_handle_comp(struct nvme_tcp_queue *queue,
+ 		struct nvme_tcp_rsp_pdu *pdu)
+ {
+ 	struct nvme_completion *cqe = &pdu->cqe;
+-	pr_info("Received completion command id: %d\n", cqe->command_id);
++	pr_debug("Received completion command id: %d\n", cqe->command_id);
+ 	int ret = 0;
+ 
+ 	/*
+@@ -683,7 +682,7 @@ static int nvme_tcp_handle_comp(struct nvme_tcp_queue *queue,
+ 	else
+ 		ret = nvme_tcp_process_nvme_cqe(queue, cqe);
+ 
+-	pr_info("nvme_tcp_handle_comp returning %d\n", ret);
++	pr_debug("nvme_tcp_handle_comp returning %d\n", ret);
+ 
+ 	return ret;
+ }
+@@ -717,7 +716,7 @@ static void nvme_tcp_setup_h2c_data_pdu(struct nvme_tcp_request *req)
+ 	data->hdr.plen =
+ 		cpu_to_le32(data->hdr.hlen + hdgst + req->pdu_len + ddgst);
+ 	data->hdr.queue_id = nvme_tcp_queue_id(queue);
+-	pr_info("H2C PDU queue_id is: %d\n", data->hdr.queue_id);
++	pr_debug("H2C PDU queue_id is: %d\n", data->hdr.queue_id);
+ 	data->ttag = req->ttag;
+ 	data->command_id = nvme_cid(rq);
+ 	data->data_offset = cpu_to_le32(req->h2cdata_offset);
+@@ -727,7 +726,7 @@ static void nvme_tcp_setup_h2c_data_pdu(struct nvme_tcp_request *req)
+ static int nvme_tcp_handle_r2t(struct nvme_tcp_queue *queue,
+ 		struct nvme_tcp_r2t_pdu *pdu)
+ {
+-	pr_info("Handling R2T\n");
++	pr_debug("Handling R2T\n");
+ 	struct nvme_tcp_request *req;
+ 	struct request *rq;
+ 	u32 r2t_length = le32_to_cpu(pdu->r2t_length);
+@@ -765,7 +764,7 @@ static int nvme_tcp_handle_r2t(struct nvme_tcp_queue *queue,
+ 
+ 	req->pdu_len = 0;
+ 	req->h2cdata_left = r2t_length;
+-	pr_info("Length given in r2t is %d\n", r2t_length);
++	pr_debug("Length given in r2t is %d\n", r2t_length);
+ 	req->h2cdata_offset = r2t_offset;
+ 	req->ttag = pdu->ttag;
+ 
+@@ -780,7 +779,7 @@ static int nvme_tcp_recv_pdu(struct nvme_tcp_queue *queue, struct homa_recvmsg_a
+ {
+ 	struct nvme_tcp_hdr *hdr;
+ 	char *pdu = queue->pdu;
+-	pr_info("len to read is %d, and length of pdu remaining is %d\n", *len, queue->pdu_remaining);
++	pr_debug("len to read is %d, and length of pdu remaining is %d\n", *len, queue->pdu_remaining);
+ 	size_t rcv_len = min_t(size_t, *len, queue->pdu_remaining);
+ 	int ret;
+ 
+@@ -809,9 +808,6 @@ static int nvme_tcp_recv_pdu(struct nvme_tcp_queue *queue, struct homa_recvmsg_a
+ 			return ret;
+ 	}
+ 
+-	pr_info("Header type we have received is: %d\n", hdr->type);
+-	pr_info("Packet length is:%d\n", hdr->plen);
+-
+ 	switch (hdr->type) {
+ 	case nvme_tcp_c2h_data:
+ 		return nvme_tcp_handle_c2h_data(queue, (void *)queue->pdu);
+@@ -844,7 +840,7 @@ static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct homa_recvmsg_
+ 		nvme_cid_to_rq(nvme_tcp_tagset(queue), pdu->command_id);
+ 	struct nvme_tcp_request *req = blk_mq_rq_to_pdu(rq);
+ 
+-	pr_info("Data remaining to read: %zu\n", queue->data_remaining);
++	pr_debug("Data remaining to read: %zu\n", queue->data_remaining);
+ 
+ 	while (true) {
+ 		int recv_len, ret;
+@@ -902,7 +898,6 @@ static int nvme_tcp_recv_data(struct nvme_tcp_queue *queue, struct homa_recvmsg_
+ 						le16_to_cpu(req->status));
+ 				queue->nr_cqe++;
+ 			}
+-			pr_info("here we comee!\n");
+ 			nvme_tcp_init_recv_ctx(queue);
+ 		}
+ 	}
+@@ -968,11 +963,11 @@ static int nvme_tcp_recv(struct nvme_tcp_queue *queue, int len, struct homa_recv
+ 	while (len) {
+ 		switch (nvme_tcp_recv_state(queue)) {
+ 		case NVME_TCP_RECV_PDU:
+-			pr_info("Receving pdu\n");
++			pr_debug("Receving pdu\n");
+ 			result = nvme_tcp_recv_pdu(queue, homa_recv_args, &homa_pool_offset, &len);
+ 			break;
+ 		case NVME_TCP_RECV_DATA:
+-			pr_info("Receiving some data!\n");
++			pr_debug("Receiving some data!\n");
+ 			result = nvme_tcp_recv_data(queue, homa_recv_args , &homa_pool_offset, &len);
+ 			break;
+ 		case NVME_TCP_RECV_DDGST:
+@@ -1003,7 +998,7 @@ static void nvme_tcp_data_ready(struct sock *sk)
+ 	queue = sk->sk_user_data;
+ 	if (likely(queue && queue->rd_enabled) &&
+ 	    !test_bit(NVME_TCP_Q_POLLING, &queue->flags)){
+-	    	pr_info("Entering io work queue through skread\n");
++	    	pr_debug("Entering io work queue through skread\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ 	    }
+ 	read_unlock_bh(&sk->sk_callback_lock);
+@@ -1017,7 +1012,7 @@ static void nvme_tcp_write_space(struct sock *sk)
+ 	queue = sk->sk_user_data;
+ 	if (likely(queue && sk_stream_is_writeable(sk))) {
+ 		clear_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+-		pr_info("entering io_work through write space!");
++		pr_debug("entering io_work through write space!");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ 	}
+ 	read_unlock_bh(&sk->sk_callback_lock);
+@@ -1053,7 +1048,7 @@ static void nvme_tcp_state_change(struct sock *sk)
+ 
+ static inline void nvme_tcp_done_send_req(struct nvme_tcp_queue *queue)
+ {
+-	pr_info("Finished sending request\n");
++	pr_debug("Finished sending request\n");
+ 	queue->request = NULL;
+ }
+ 
+@@ -1072,7 +1067,7 @@ static void nvme_tcp_fail_request(struct nvme_tcp_request *req)
+ 
+ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *pdu_bvec)
+ {
+-	pr_info("sending some data\n");
++	pr_debug("sending some data\n");
+ 	struct nvme_tcp_queue *queue = req->queue;
+ 	struct request *rq = blk_mq_rq_from_pdu(req);
+ 	int req_data_len = req->data_len;
+@@ -1082,13 +1077,11 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *
+ 	struct bio_vec *bvecs = kmalloc(sizeof(struct bio_vec) * number_of_segments, GFP_KERNEL);
+ 	bvecs[0] = *pdu_bvec;
+ 	int n = 1;
+-	pr_info("Number o' segments to send:%d\n", number_of_segments);
++	pr_debug("Number o' segments to send:%d\n", number_of_segments);
+ 
+ 	while (n < number_of_segments) {
+ 		int data_left = nvme_tcp_pdu_data_left(req);
+ 		int iov_iter_len = iov_iter_single_seg_count(&req->iter);
+-		pr_info("We are in loop %d\n", n);
+-		pr_info("We have %d data left in this pdu, we have %d data in our current iterator\n", data_left, iov_iter_len);
+ 		struct bio_vec bvec;
+ 		struct page *page = nvme_tcp_req_cur_page(req);
+ 		size_t offset = nvme_tcp_req_cur_offset(req);
+@@ -1121,7 +1114,6 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req, struct bio_vec *
+ 
+ 		/* fully successful last send in current PDU */
+ 		if (last) {
+-			pr_info("Last Page, lets send data!\n");
+ 			struct msghdr msg = {
+ 				.msg_flags = MSG_DONTWAIT ,
+ 			};
+@@ -1175,7 +1167,7 @@ static int nvme_tcp_try_send_cmd_pdu(struct nvme_tcp_request *req, struct bio_ve
+ 	//but we are only sending one pdu at a time in homas case
+ 	// so we probably can do the nvme_tcp_queue_more earlier on in the send flow?
+ 	if (inline_data){
+-		pr_info("We have inline data to send!\n");
++		pr_debug("We have inline data to send!\n");
+ 		req->state = NVME_TCP_SEND_DATA;
+ 		if (queue->data_digest)
+ 			crypto_ahash_init(queue->snd_hash);;
+@@ -1202,9 +1194,8 @@ static int nvme_tcp_try_send_cmd_pdu(struct nvme_tcp_request *req, struct bio_ve
+ 		return ret;
+ 
+ 
+-	pr_info("ret is %d\n", ret);
+-			nvme_tcp_done_send_req(queue);
+-		return 1;
++	nvme_tcp_done_send_req(queue);
++	return 1;
+ 	//the below line was there if we didn't send the whole message, but that can't be the case
+ 	//with homa. Will remove in future most likely
+ 	//req->offset += ret;
+@@ -1286,7 +1277,7 @@ static int nvme_tcp_try_send(struct nvme_tcp_queue *queue)
+ 	if (!queue->request) {
+ 		queue->request = nvme_tcp_fetch_request(queue);
+ 		if (!queue->request){
+-			pr_info("Got no request here\n");
++			pr_debug("Got no request here\n");
+ 			return 0;
+ 		}
+ 	}
+@@ -1348,7 +1339,6 @@ static int nvme_tcp_try_recv(struct nvme_tcp_queue *queue)
+ 	msg.msg_controllen = sizeof(*homa_recv_args);
+ 
+ 	int ret = sock_recvmsg(queue->sock, &msg, msg.msg_flags);
+-	pr_info("ret is %d\n", ret);
+ 	if (ret<0)
+ 		return ret;
+ 
+@@ -1379,14 +1369,13 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 	unsigned long deadline = jiffies + msecs_to_jiffies(1);
+ 
+ 	do {
+-		pr_info("In the io_work path\n");
++		pr_debug("In the io_work path\n");
+ 		bool pending = false;
+ 		int result;
+ 
+ 		if (mutex_trylock(&queue->send_mutex)) {
+ 			result = nvme_tcp_try_send(queue);
+ 			mutex_unlock(&queue->send_mutex);
+-			pr_info("send result is %d\n", result);
+ 			//should check the value here
+ 			if (result > 0)
+ 				pending = true;
+@@ -1395,7 +1384,6 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 		}
+ 
+ 		result = nvme_tcp_try_recv(queue);
+-		pr_info("result is %d\n", result);
+ 		if (result > 0)
+ 			pending = true;
+ 		else if (unlikely(result < 0))
+@@ -1406,7 +1394,7 @@ static void nvme_tcp_io_work(struct work_struct *w)
+ 
+ 	} while (!time_after(jiffies, deadline)); /* quota is exhausted */
+ 
+-	pr_info("Entering io work queue after loop\n");
++	pr_debug("Entering io work queue after loop\n");
+ 	queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ }
+ 
+@@ -1561,7 +1549,6 @@ static int nvme_tcp_init_connection(struct nvme_tcp_queue *queue)
+ 	iov.iov_base = icresp;
+ 	iov.iov_len = sizeof(*icresp);
+ 	int recv_msg_len = sock_recvmsg(queue->sock, &msg , msg.msg_flags);
+-	pr_info("len of icresp recvmsg is %d\n", recv_msg_len);
+ 	if (recv_msg_len < 0)
+ 		goto free_icresp;
+ 
+@@ -2537,7 +2524,7 @@ static blk_status_t nvme_tcp_setup_cmd_pdu(struct nvme_ns *ns,
+ 	pdu->hdr.type = nvme_tcp_cmd;
+ 	pdu->hdr.flags = 0;
+ 	pdu->hdr.queue_id =  nvme_tcp_queue_id(queue);
+-	pr_info("The queue id is: %d\n", pdu->hdr.queue_id);
++	pr_debug("The queue id is: %d\n", pdu->hdr.queue_id);
+ 	if (queue->hdr_digest)
+ 		pdu->hdr.flags |= NVME_TCP_F_HDGST;
+ 	if (queue->data_digest && req->pdu_len) {
+@@ -2565,7 +2552,7 @@ static void nvme_tcp_commit_rqs(struct blk_mq_hw_ctx *hctx)
+ 	struct nvme_tcp_queue *queue = hctx->driver_data;
+ 
+ 	if (!llist_empty(&queue->req_list)){
+-		pr_info("entering io workqueue through nvme_tcp_commit_rqs\n");
++		pr_debug("entering io workqueue through nvme_tcp_commit_rqs\n");
+ 		queue_work_on(queue->io_cpu, nvme_tcp_wq, &queue->io_work);
+ 	}
+ }
+@@ -2591,7 +2578,7 @@ static blk_status_t nvme_tcp_queue_rq(struct blk_mq_hw_ctx *hctx,
+ 	struct nvme_tcp_cmd_pdu *pdu = nvme_tcp_req_cmd_pdu(req);
+ 	u8 opc = pdu->cmd.common.opcode, fctype = pdu->cmd.fabrics.fctype;
+ 	int qid = nvme_tcp_queue_id(req->queue);
+-	pr_info("the request with raw cid(%d) is on queue %d: ,cid: %#x ,type %d, opcode %#x (%s)\n",
++	pr_debug("the request with raw cid(%d) is on queue %d: ,cid: %#x ,type %d, opcode %#x (%s)\n",
+ 		req->req.cmd->common.command_id,qid, nvme_cid(rq), pdu->hdr.type,
+ 		opc, nvme_opcode_str(qid, opc, fctype));
+ 
+-- 
+2.37.2
+
