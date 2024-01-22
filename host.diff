@@ -1,7 +1,7 @@
 From 2e4dfc68f852237290d51cad6767527fe6b9ab19 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 5 Oct 2023 14:27:54 +0000
-Subject: [PATCH 01/24] Change the make file and include homa library
+Subject: [PATCH 01/25] Change the make file and include homa library
 
 ---
  drivers/nvme/host/Makefile | 1 +
@@ -47,7 +47,7 @@ index 5b332d9f87fc..693e7f63240b 100644
 From 644d9f7bfc024296804339c76009630cd2937ca4 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 5 Oct 2023 14:45:52 +0000
-Subject: [PATCH 02/24] Change Sockets to HOMA
+Subject: [PATCH 02/25] Change Sockets to HOMA
 
 ---
  drivers/nvme/host/tcp.c | 12 +++++++++---
@@ -89,7 +89,7 @@ index 693e7f63240b..2f94db8a066a 100644
 From bcea427e6302c7ab332b1743fbbd4294ea1b1ecd Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 5 Oct 2023 15:16:56 +0000
-Subject: [PATCH 03/24]  Set Up Homa Socket
+Subject: [PATCH 03/25]  Set Up Homa Socket
 
 ---
  drivers/nvme/host/tcp.c | 33 +++++++++++++++------------------
@@ -193,7 +193,7 @@ index 2f94db8a066a..7dd1234c8cf9 100644
 From 4ce35646faa560903fe1b45ac0f9c28437564f9b Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 5 Oct 2023 16:03:16 +0000
-Subject: [PATCH 04/24] Modify ICREQ and ICRESP routes to work with HOMA
+Subject: [PATCH 04/25] Modify ICREQ and ICRESP routes to work with HOMA
 
 ---
  drivers/nvme/host/tcp.c | 37 ++++++++++++++++++++++++++++++++++---
@@ -276,7 +276,7 @@ index 7dd1234c8cf9..e06856e38642 100644
 From 40d179ac6b66b68bdd2f803377aca6b2c90415d2 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:41:48 +0000
-Subject: [PATCH 05/24] Fix Homa Variable
+Subject: [PATCH 05/25] Fix Homa Variable
 
 ---
  drivers/nvme/host/tcp.c | 2 +-
@@ -302,7 +302,7 @@ index e06856e38642..a6ea7993f6dd 100644
 From 07c67ef96454bfaf4100fa76f05da6c50ef46264 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:44:49 +0000
-Subject: [PATCH 06/24] Change homa_recv_args in icresp to Statically Defined
+Subject: [PATCH 06/25] Change homa_recv_args in icresp to Statically Defined
  Memory
 
 ---
@@ -364,7 +364,7 @@ index a6ea7993f6dd..f63c86dc8bd4 100644
 From 3bee13ebc6a330a696df696189fd9462d3522039 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:47:08 +0000
-Subject: [PATCH 07/24] Add pr_infos to Log Info in the io_work Function
+Subject: [PATCH 07/25] Add pr_infos to Log Info in the io_work Function
 
 ---
  drivers/nvme/host/tcp.c | 5 +++++
@@ -413,7 +413,7 @@ index f63c86dc8bd4..3629b99f1428 100644
 From 7d07e87dbfe494cd4aef661f1fc6a6ac43cb94ac Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:50:39 +0000
-Subject: [PATCH 08/24] Print Statements To Track Where We Enter The io_work
+Subject: [PATCH 08/25] Print Statements To Track Where We Enter The io_work
  Function From
 
 ---
@@ -456,7 +456,7 @@ index 3629b99f1428..478b02dc5796 100644
 From fd796b6eda807577b34f9e0672094b6213aab603 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:52:20 +0000
-Subject: [PATCH 09/24] Write Print Function To Track Entry Into io_work
+Subject: [PATCH 09/25] Write Print Function To Track Entry Into io_work
  Function From nvme_tcp_commit_rqs
 
 ---
@@ -486,7 +486,7 @@ index 478b02dc5796..3a8222322241 100644
 From 9f4680fed7bc8e544d89dc795e317ce3063d5675 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 14:57:44 +0000
-Subject: [PATCH 10/24] Modify Sending Functions to Send  Data Over Homa for
+Subject: [PATCH 10/25] Modify Sending Functions to Send  Data Over Homa for
  Command PDUs and Data
 
 ---
@@ -715,7 +715,7 @@ index 3a8222322241..9cd1f64ec934 100644
 From 9f9ad81509221822250415e40736c5ce22f98422 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 15:30:45 +0000
-Subject: [PATCH 11/24] Enable Receiving over HOMA Including Reading From the
+Subject: [PATCH 11/25] Enable Receiving over HOMA Including Reading From the
  Buffer Pool
 
 ---
@@ -982,7 +982,7 @@ index 9cd1f64ec934..02c5b507b2f9 100644
 From 2f4a28bab2f8aaf1497257f4a15afb76816ac9f5 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sat, 4 Nov 2023 15:32:37 +0000
-Subject: [PATCH 12/24] Add Some More Logging Information
+Subject: [PATCH 12/25] Add Some More Logging Information
 
 ---
  drivers/nvme/host/tcp.c | 13 +++++++++++--
@@ -1050,7 +1050,7 @@ index 02c5b507b2f9..0ef9bcf90ee7 100644
 From 8435cd402fcb8c93d01f0510a602427208351061 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:13:03 +0000
-Subject: [PATCH 13/24] Add Queue Id to PDU
+Subject: [PATCH 13/25] Add Queue Id to PDU
 
 ---
  drivers/nvme/host/tcp.c  | 23 ++++++++++++++---------
@@ -1173,7 +1173,7 @@ index 57ebe1267f7f..f577c09f3123 100644
 From 99688681db8d9ce954fba9df7f6bb4a45d407187 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:13:50 +0000
-Subject: [PATCH 14/24] Print Amazing Debug Log Message!
+Subject: [PATCH 14/25] Print Amazing Debug Log Message!
 
 ---
  drivers/nvme/host/tcp.c | 7 ++++++-
@@ -1204,7 +1204,7 @@ index ff32b91ffc2a..ca3953a4a329 100644
 From b7bc93d60f4c69d241873efb9e52cfddbf3a1ef7 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:18:05 +0000
-Subject: [PATCH 15/24] Enable Passing Back Homa Recv Msg Args
+Subject: [PATCH 15/25] Enable Passing Back Homa Recv Msg Args
 
 ---
  drivers/nvme/host/tcp.c | 29 +++++++++++++++--------------
@@ -1306,7 +1306,7 @@ index ca3953a4a329..7b94c656d8ff 100644
 From fd8b0f503742bc0086db251908598d6e4cf6c6ac Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:18:53 +0000
-Subject: [PATCH 16/24] Add R2T and H2C Functionality
+Subject: [PATCH 16/25] Add R2T and H2C Functionality
 
 ---
  drivers/nvme/host/tcp.c | 38 ++++++++++++++++++++++++--------------
@@ -1452,7 +1452,7 @@ index 7b94c656d8ff..82365e314db1 100644
 From c8c90283cd60326410e5e8fad926853175e81b80 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:32:31 +0000
-Subject: [PATCH 17/24] Change pr_infos to pr_debugs
+Subject: [PATCH 17/25] Change pr_infos to pr_debugs
 
 ---
  drivers/nvme/host/tcp.c | 67 +++++++++++++++++------------------------
@@ -1770,7 +1770,7 @@ index 82365e314db1..1e0fe5b7fcc9 100644
 From aad4f33ce544497219beae36f7e9b56707c85b0b Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Fri, 17 Nov 2023 17:20:30 +0000
-Subject: [PATCH 18/24] Better Debug Messages
+Subject: [PATCH 18/25] Better Debug Messages
 
 ---
  drivers/nvme/host/tcp.c | 4 ++++
@@ -1819,7 +1819,7 @@ index 1e0fe5b7fcc9..c38e5f5e6fe3 100644
 From 6e4eaae6baa26059ced2a28ac97844291e756f77 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Tue, 21 Nov 2023 16:12:10 +0000
-Subject: [PATCH 19/24] Make IO Queue Recvmsg Nonblocking
+Subject: [PATCH 19/25] Make IO Queue Recvmsg Nonblocking
 
 ---
  drivers/nvme/host/tcp.c | 3 ++-
@@ -1853,7 +1853,7 @@ index c38e5f5e6fe3..ae1638152139 100644
 From 4d3577b4d072b06a6c9f154493b23489eeb45d7e Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 30 Nov 2023 19:34:37 +0000
-Subject: [PATCH 20/24] Add Debug Messages to Keep Track of RPC
+Subject: [PATCH 20/25] Add Debug Messages to Keep Track of RPC
 
 ---
  drivers/nvme/host/tcp.c | 5 ++++-
@@ -1903,7 +1903,7 @@ index ae1638152139..ffaad1340364 100644
 From 343de3056a7c47fb342978e68488c7930fc22b84 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Wed, 3 Jan 2024 13:35:19 +0000
-Subject: [PATCH 21/24] Increase Homa BufPool Size
+Subject: [PATCH 21/25] Increase Homa BufPool Size
 
 ---
  drivers/nvme/host/tcp.c | 6 ++++--
@@ -1954,7 +1954,7 @@ index ffaad1340364..cca9f0a807d4 100644
 From 9a36f1658916dc2ee5697c3e53d7b5616f7274a4 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Sun, 14 Jan 2024 23:47:09 +0000
-Subject: [PATCH 22/24] Add Some Comments and Debug Messages Remove Request
+Subject: [PATCH 22/25] Add Some Comments and Debug Messages Remove Request
  From Queue
 
 ---
@@ -2057,7 +2057,7 @@ index cca9f0a807d4..5e5d7e144ab3 100644
 From c22849f18c7eeaed886cb26c8066fdea97a6878c Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Tue, 16 Jan 2024 14:44:50 +0000
-Subject: [PATCH 23/24] Remove Weird Copy Iter From Homa Pool Bug
+Subject: [PATCH 23/25] Remove Weird Copy Iter From Homa Pool Bug
 
 ---
  drivers/nvme/host/tcp.c | 2 +-
@@ -2083,7 +2083,7 @@ index 5e5d7e144ab3..ab99520959c1 100644
 From c940bde01aa1d4a49161a2efbedc693c30fed5f6 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 18 Jan 2024 23:16:07 +0000
-Subject: [PATCH 24/24] Clean Up Code Re-write The Send Function
+Subject: [PATCH 24/25] Clean Up Code Re-write The Send Function
 
 ---
  drivers/nvme/host/tcp.c | 155 ++++++++++++++++++----------------------
@@ -2402,6 +2402,32 @@ index ab99520959c1..c8a6a262dc2a 100644
  err_crypto:
  	if (queue->hdr_digest || queue->data_digest)
  		nvme_tcp_free_crypto(queue);
+-- 
+2.37.2
+
+
+From 90b17180179abd5dab20802df775226acdf02fbf Mon Sep 17 00:00:00 2001
+From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
+Date: Mon, 22 Jan 2024 11:57:44 +0000
+Subject: [PATCH 25/25] Fix Broken Looping on The Receivers Side
+
+---
+ drivers/nvme/host/tcp.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+index c8a6a262dc2a..f129e4fbad72 100644
+--- a/drivers/nvme/host/tcp.c
++++ b/drivers/nvme/host/tcp.c
+@@ -1343,6 +1343,8 @@ static int nvme_tcp_try_recv(struct nvme_tcp_queue *queue)
+ 
+ 	int ret = sock_recvmsg(queue->sock, &msg, 0);
+ 	if (ret<0 ){
++		if (likely(ret == -EAGAIN))
++			return 0;
+ 		return ret;
+ 	}
+ 
 -- 
 2.37.2
 
