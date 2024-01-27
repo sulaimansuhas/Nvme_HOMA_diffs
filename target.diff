@@ -1,7 +1,7 @@
 From 1021883d5a0ec2a8bd6cc38cb9d5ad4e8b85b019 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Wed, 4 Oct 2023 15:43:53 +0000
-Subject: [PATCH 01/27] Change Makefile to include HOMA
+Subject: [PATCH 01/24] Change Makefile to include HOMA
 
 ---
  drivers/nvme/target/Makefile | 1 +
@@ -26,7 +26,7 @@ index c66820102493..89419cb26889 100644
 From 3c6dd8d49d5692541b4322f6474cc3f787f8405f Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Wed, 4 Oct 2023 16:25:00 +0000
-Subject: [PATCH 02/27] Added Initital Changes to set up main HOMA socket
+Subject: [PATCH 02/24] Added Initital Changes to set up main HOMA socket
 
 ---
  drivers/nvme/target/tcp.c | 80 +++++++++++++++++++++------------------
@@ -218,7 +218,7 @@ index 868aa4de2e4c..52b3b1fcf8c3 100644
 From fa8f89ab01c7e57ff5e2724918770633e4929064 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:02:26 +0000
-Subject: [PATCH 03/27] Modify Receive Function to Use HOMA
+Subject: [PATCH 03/24] Modify Receive Function to Use HOMA
 
 ---
  drivers/nvme/target/tcp.c | 37 +++++++++++++++++++++++++++++++++++--
@@ -296,7 +296,7 @@ index 52b3b1fcf8c3..01fd3d7f15f1 100644
 From 51a6743f5abd3631c9c2fc8a529ea3f74e289f07 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:08:52 +0000
-Subject: [PATCH 04/27] Add Functions to Copy From HOMA pool
+Subject: [PATCH 04/24] Add Functions to Copy From HOMA pool
 
 ---
  drivers/nvme/target/tcp.c | 70 +++++++++++++++++++++++++++++++++++++++
@@ -390,7 +390,7 @@ index 01fd3d7f15f1..df22c8c5a2cb 100644
 From 76f2e463d843b548e9a7f068c44d8d05c6743bfd Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:12:55 +0000
-Subject: [PATCH 05/27] Changes to Allow Accepting and Responding to ICREQ
+Subject: [PATCH 05/24] Changes to Allow Accepting and Responding to ICREQ
 
 ---
  drivers/nvme/target/tcp.c | 45 +++++++++++++++++++++++----------------
@@ -494,7 +494,7 @@ index df22c8c5a2cb..f27e3359590a 100644
 From d359c16d0892bd2e9227640a0ecb8e972d1695b0 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:42:15 +0000
-Subject: [PATCH 06/27] Enable Homa on the Data Receiving Path
+Subject: [PATCH 06/24] Enable Homa on the Data Receiving Path
 
 ---
  drivers/nvme/target/tcp.c | 18 +++++++-----------
@@ -539,7 +539,7 @@ index f27e3359590a..84929ec6ff6b 100644
 From 0bbf5d1c0de7c8245b45b23e4a59ee736e4addc7 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:44:05 +0000
-Subject: [PATCH 07/27] Set Up Bvecs and Info Messages for Send Path
+Subject: [PATCH 07/24] Set Up Bvecs and Info Messages for Send Path
 
 ---
  drivers/nvme/target/tcp.c | 17 +++++++++++++----
@@ -601,7 +601,7 @@ index 84929ec6ff6b..2b8bcaf0ef77 100644
 From 2124e423e24d497e5ca4fe3e4dd17d8da0b167bf Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:47:10 +0000
-Subject: [PATCH 08/27] Set Up Stateful HOMA Args on the Queue and Command
+Subject: [PATCH 08/24] Set Up Stateful HOMA Args on the Queue and Command
  struct
 
 ---
@@ -651,7 +651,7 @@ index 2b8bcaf0ef77..05f5d24f47ea 100644
 From 83227a90a300bf88218955d610f01b616528506b Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:48:24 +0000
-Subject: [PATCH 09/27] Copy over HOMA state from queue to cmd
+Subject: [PATCH 09/24] Copy over HOMA state from queue to cmd
 
 ---
  drivers/nvme/target/tcp.c | 4 ++++
@@ -679,7 +679,7 @@ index 05f5d24f47ea..46d422a8dbb1 100644
 From 2941f002fd08efbae1aa7317ec5ddaed94ea0370 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:50:24 +0000
-Subject: [PATCH 10/27] Add Info Messaging on the Process Received PDU path
+Subject: [PATCH 10/24] Add Info Messaging on the Process Received PDU path
 
 ---
  drivers/nvme/target/tcp.c | 8 ++++++++
@@ -733,7 +733,7 @@ index 46d422a8dbb1..972c16a2e49f 100644
 From 9786928445aff00d968f85549139e6a1653158cb Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:52:07 +0000
-Subject: [PATCH 11/27] Format Send Response to Use HOMA
+Subject: [PATCH 11/24] Format Send Response to Use HOMA
 
 ---
  drivers/nvme/target/tcp.c | 41 ++++++++++++++++++++++++++++-----------
@@ -819,7 +819,7 @@ index 972c16a2e49f..07f2099789f7 100644
 From 23d07eac5c8a5569fc627c8d2bc085558618c04d Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:52:39 +0000
-Subject: [PATCH 12/27] Format Send Data to use HOMA
+Subject: [PATCH 12/24] Format Send Data to use HOMA
 
 ---
  drivers/nvme/target/tcp.c | 69 ++++++++++++++++++++++++---------------
@@ -933,7 +933,7 @@ index 07f2099789f7..77cf93f35df3 100644
 From 1796a2d3626862aab22cf5f1efa4341e106960d5 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:53:29 +0000
-Subject: [PATCH 13/27] Modify Send Data PDU to Work with HOMA
+Subject: [PATCH 13/24] Modify Send Data PDU to Work with HOMA
 
 ---
  drivers/nvme/target/tcp.c | 20 +++++++-------------
@@ -988,7 +988,7 @@ index 77cf93f35df3..08985e230d02 100644
 From cddd552c135a210aab9e25b3cb390280d8aed55d Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 26 Oct 2023 14:54:42 +0000
-Subject: [PATCH 14/27] Queue Work on Main CPU
+Subject: [PATCH 14/24] Queue Work on Main CPU
 
 ---
  drivers/nvme/target/tcp.c | 2 +-
@@ -1014,7 +1014,7 @@ index 08985e230d02..7d11d657e6fa 100644
 From b55ffc349b8965ee155e1d3a8793a258b306d953 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 17:27:19 +0000
-Subject: [PATCH 15/27] Make Changes to Enable Single Target Socket
+Subject: [PATCH 15/24] Make Changes to Enable Single Target Socket
 
 ---
  drivers/nvme/target/tcp.c | 293 +++++++++++++++++++++++++++-----------
@@ -1651,7 +1651,7 @@ index 57ebe1267f7f..f577c09f3123 100644
 From 2cfc974132013f0f86b96463294bb7cb27a4c112 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 17:43:39 +0000
-Subject: [PATCH 16/27] Enable R2T
+Subject: [PATCH 16/24] Enable R2T
 
 ---
  drivers/nvme/target/tcp.c | 80 +++++++++++++++++++++++----------------
@@ -1851,7 +1851,7 @@ index 9be75307e6c8..ccfbb530bfeb 100644
 From 4c8b9fe53267b83722c7dab31d14fee300d9a86e Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 13 Nov 2023 18:26:58 +0000
-Subject: [PATCH 17/27] Change Most of the Debug Message to pr_debug
+Subject: [PATCH 17/24] Change Most of the Debug Message to pr_debug
 
 ---
  drivers/nvme/target/tcp.c | 69 ++++++++++++++++++---------------------
@@ -2128,7 +2128,7 @@ index ccfbb530bfeb..47ded8145f03 100644
 From 19b812b5e862c610d44f8a233c32905df52334a1 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Fri, 17 Nov 2023 17:21:30 +0000
-Subject: [PATCH 18/27] Better Debug Messages
+Subject: [PATCH 18/24] Better Debug Messages
 
 ---
  drivers/nvme/target/tcp.c | 1 +
@@ -2153,7 +2153,7 @@ index 47ded8145f03..7053e678a0e5 100644
 From 21abd53bf5427070c5627de63eee47e9b702910f Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Thu, 30 Nov 2023 19:33:04 +0000
-Subject: [PATCH 19/27] Added debug messages to keep track of RPC
+Subject: [PATCH 19/24] Added debug messages to keep track of RPC
 
 ---
  drivers/nvme/target/tcp.c | 4 ++++
@@ -2202,7 +2202,7 @@ index 7053e678a0e5..38d17fa0cffb 100644
 From d31fb598e3cda38742fa682d418f437081609229 Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Wed, 3 Jan 2024 13:36:52 +0000
-Subject: [PATCH 20/27] Increase Homa BufPool Size
+Subject: [PATCH 20/24] Increase Homa BufPool Size
 
 ---
  drivers/nvme/target/tcp.c | 10 +++++-----
@@ -2257,7 +2257,7 @@ index 38d17fa0cffb..7ee9e6169815 100644
 From 18227db590a2782a79e6c5c97ff36c2aa29a5a6b Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 15 Jan 2024 00:07:34 +0000
-Subject: [PATCH 21/27] Add Module Parameter to Control MaxH2CSize Add Useful
+Subject: [PATCH 21/24] Add Module Parameter to Control MaxH2CSize Add Useful
  Print Statement(s)
 
 ---
@@ -2310,7 +2310,7 @@ index 7ee9e6169815..25e2ac1ef713 100644
 From e1bde67979215cbaf3a38efd2d2bcd1fb634d6bc Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
 Date: Mon, 15 Jan 2024 00:09:29 +0000
-Subject: [PATCH 22/27] Allow Target To Respond To A H2CData Packet With An R2T
+Subject: [PATCH 22/24] Allow Target To Respond To A H2CData Packet With An R2T
  If Needed
 
 ---
@@ -2340,10 +2340,10 @@ index 25e2ac1ef713..293cfef6b07b 100644
 2.37.2
 
 
-From 0d52d5041c33b871de0dec62f90b19f566795138 Mon Sep 17 00:00:00 2001
+From 5bc7e55c91cf0b472a6a84f5fdb9eae417e6188c Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
-Date: Thu, 18 Jan 2024 23:22:49 +0000
-Subject: [PATCH 23/27] Fix Homa Copy Bug
+Date: Thu, 25 Jan 2024 14:02:42 +0000
+Subject: [PATCH 23/24] Fix Iter Copy Bug
 
 ---
  drivers/nvme/target/tcp.c | 2 ++
@@ -2373,578 +2373,20 @@ index 293cfef6b07b..6534eb5713a7 100644
 2.37.2
 
 
-From ac6c0fc6c34c71ee2959f195ad7c8f319dd3b332 Mon Sep 17 00:00:00 2001
+From 32e9f47128a1b1ba06e16640016d460c9fbaf06b Mon Sep 17 00:00:00 2001
 From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
-Date: Thu, 18 Jan 2024 23:33:10 +0000
-Subject: [PATCH 24/27] Re-Architect Send Path
-
----
- drivers/nvme/target/tcp.c | 226 ++++++++++++++++++--------------------
- 1 file changed, 107 insertions(+), 119 deletions(-)
-
-diff --git a/drivers/nvme/target/tcp.c b/drivers/nvme/target/tcp.c
-index 6534eb5713a7..37107aca2f87 100644
---- a/drivers/nvme/target/tcp.c
-+++ b/drivers/nvme/target/tcp.c
-@@ -215,6 +215,7 @@ static struct workqueue_struct *nvmet_tcp_wq;
- static const struct nvmet_fabrics_ops nvmet_tcp_ops;
- static void nvmet_tcp_free_cmd(struct nvmet_tcp_cmd *c);
- static void nvmet_tcp_free_cmd_buffers(struct nvmet_tcp_cmd *cmd);
-+static int nvmet_try_send_data(struct nvmet_tcp_cmd *cmd, struct bio_vec *bvecs);
- 
- /* copy_from_homa_pool - copy data from the homa buffer pool to another buffer
-    @homa_recv_args: The homa_recvmsg_args struct that contains the information of our message in the
-@@ -674,95 +675,96 @@ static void nvmet_tcp_execute_request(struct nvmet_tcp_cmd *cmd)
- 		cmd->req.execute(&cmd->req);
- }
- 
--static int nvmet_try_send_data_pdu(struct nvmet_tcp_cmd *cmd, struct bio_vec *bvec)
-+static int nvmet_try_send_data_pdu(struct nvmet_tcp_cmd *cmd)
- {
- 	u8 hdgst = nvmet_tcp_hdgst_len(cmd->queue);
- 	int left = sizeof(*cmd->data_pdu) - cmd->offset + hdgst;
-+	int ret;
-+	struct bio_vec *data_bvecs;
-+
-+	pr_debug("Num of sg pages is : %d\n", cmd->req.sg_cnt);
-+	data_bvecs = kmalloc_array(cmd->req.sg_cnt + 2, sizeof(struct bio_vec)
-+	, GFP_KERNEL);
-+
-+	bvec_set_virt(&data_bvecs[0], (void *)cmd->data_pdu + cmd->offset, left);
-+	pr_debug("Length of data pdu: %d\n", data_bvecs[0].bv_len);
- 
--	bvec_set_virt(bvec, (void *)cmd->data_pdu + cmd->offset, left);
--	pr_debug("Length of data pdu: %d\n", bvec->bv_len);
--	/*
--	do we even need this anymore?	
--		cmd->offset += ret;
--	left -= ret;
- 
--	if (left)
--		return -EAGAIN;
--	*/
- 	cmd->state = NVMET_TCP_SEND_DATA;
- 	cmd->offset  = 0;
--	// do we even need this return?
--	return 1;
-+	ret = nvmet_try_send_data(cmd, data_bvecs);
-+
-+	kfree(data_bvecs);
-+	return ret;
-+
- }
- 
--static int nvmet_try_send_data(struct nvmet_tcp_cmd *cmd, struct bio_vec *bvecs, bool last_in_batch)
-+static int nvmet_try_send_data(struct nvmet_tcp_cmd *cmd, struct bio_vec *bvecs)
- {
- 	struct nvmet_tcp_queue *queue = cmd->queue;
- 	int ret;
--	int num_sgl_entries = cmd->req.sg_cnt;
- 	int n = 1;
- 	int send_len = bvecs[0].bv_len + cmd->req.transfer_len;
- 	struct msghdr msg;
--	pr_debug("Total number of sgl entries: %d\n", num_sgl_entries);
-+	memset(&msg, 0, sizeof(msg));
-+	struct homa_sendmsg_args homa_args;
-+	memset(&homa_args, 0, sizeof(homa_args));
- 	pr_debug("Total number of bytes to send: %d\n", send_len);
- 
--	while (cmd->cur_sg && n<=num_sgl_entries) {
-+
-+	struct bio_vec bvec;
-+	u8 hdgst = nvmet_tcp_hdgst_len(cmd->queue);
-+	int left; 
-+
-+	while (cmd->cur_sg && n<=cmd->req.sg_cnt) {
- 		struct page *page = sg_page(cmd->cur_sg);
- 		struct bio_vec bvec;
- 		u32 left = cmd->cur_sg->length;
- 
--		/*if ((!last_in_batch && cmd->queue->send_list_len) ||
--		    cmd->wbytes_done + left < cmd->req.transfer_len ||
--		    queue->data_digest || !queue->nvme_sq.sqhd_disabled)
--			msg.msg_flags |= MSG_MORE;*/
--
- 		bvec_set_page(&bvec, page, left, cmd->offset);
- 		bvecs[n] = bvec;
- 
--		/* I don't think we need to care about cmd->offset
--		as it only comes into play with a sendmsg that doesn't
--		send all the data*/	
--		//cmd->offset += left;
- 		cmd->wbytes_done += left;
- 		cmd->cur_sg = sg_next(cmd->cur_sg);
- 		n++;
- 	}
- 	if (queue->nvme_sq.sqhd_disabled) {
--		memset(&msg, 0, sizeof(msg));
--		struct homa_sendmsg_args homa_args;
--		memset(&homa_args, 0, sizeof(homa_args));
--		pr_debug("Responding with RPC id : %lld\n", cmd->response_state.response_id);
--		homa_args.id = cmd->response_state.response_id;
--		msg.msg_name = &(cmd->response_state.source_addr);
--		msg.msg_namelen = sizeof(cmd->response_state.source_addr);
--		msg.msg_control = &homa_args;
--		msg.msg_controllen = sizeof(homa_args);
--		msg.msg_control_is_user = false;
--
--		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, bvecs, num_sgl_entries + 1, send_len);
--		ret = sock_sendmsg(cmd->queue->port->sock, &msg);
--		pr_debug("Send data sock_sendmsg returned: %d\n", ret);
--		if (ret < 0){
--			return ret;
--		}
--		cmd->queue->snd_cmd = NULL;
--		nvmet_tcp_put_cmd(cmd);
--		nvmet_tcp_free_cmd_buffers(cmd);
-+		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, bvecs, cmd->req.sg_cnt + 1, send_len);
- 	} else {
- 		nvmet_setup_response_pdu(cmd);
-+		left = sizeof(*cmd->rsp_pdu) - cmd->offset + hdgst;
-+		bvec_set_virt(&bvecs[cmd->req.sg_cnt+1], (void *)cmd->rsp_pdu + cmd->offset, left);
-+		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, bvecs, cmd->req.sg_cnt + 2,
-+		bvecs[0].bv_len + cmd->req.transfer_len + left);
- 	}
-+	pr_debug("Responding with RPC id : %lld\n", cmd->response_state.response_id);
-+	homa_args.id = cmd->response_state.response_id;
-+	msg.msg_name = &(cmd->response_state.source_addr);
-+	msg.msg_namelen = sizeof(cmd->response_state.source_addr);
-+	msg.msg_control = &homa_args;
-+	msg.msg_controllen = sizeof(homa_args);
-+	msg.msg_control_is_user = false;
- 
--	if (queue->data_digest) {
--		cmd->state = NVMET_TCP_SEND_DDGST;
--		cmd->offset = 0;
-+	ret = sock_sendmsg(cmd->queue->port->sock, &msg);
-+	pr_debug("Send data sock_sendmsg returned: %d\n", ret);
-+	if (ret < 0){
-+		return ret;
- 	}
-+	cmd->queue->snd_cmd = NULL;
-+	nvmet_tcp_put_cmd(cmd);
-+	nvmet_tcp_free_cmd_buffers(cmd);
-+
-+
-+	//if (queue->data_digest) {
-+	//	cmd->state = NVMET_TCP_SEND_DDGST;
-+	//	cmd->offset = 0;
-+	//}
- 
- 	return 1;
- 
- }
- 
--static int nvmet_try_send_response(struct nvmet_tcp_cmd *cmd, struct bio_vec *bvecs,
--		bool last_in_batch)
-+static int nvmet_try_send_response(struct nvmet_tcp_cmd *cmd)
- {
- 	struct msghdr msg;
- 	memset(&msg, 0, sizeof(msg));
-@@ -781,52 +783,26 @@ static int nvmet_try_send_response(struct nvmet_tcp_cmd *cmd, struct bio_vec *bv
- 	msg.msg_controllen = sizeof(homa_send_args);
- 	msg.msg_control_is_user = false;
- 
--	if(cmd->wbytes_done){
--		bvec_set_virt(&bvec, (void *)cmd->rsp_pdu + cmd->offset, left);
--		bvecs[cmd->req.sg_cnt +1] = bvec;
--		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, bvecs, cmd->req.sg_cnt + 2,
--		bvecs[0].bv_len + cmd->req.transfer_len + left);
--		ret = sock_sendmsg(cmd->queue->port->sock, &msg);
--		if (ret < 0)
--			return ret;
--	}
--	else{
--		bvec_set_virt(&bvec, (void *)cmd->rsp_pdu + cmd->offset, left);
--		iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, left);
--		ret = sock_sendmsg(cmd->queue->port->sock, &msg);
--		if (ret < 0)
--			return ret;
--
--	}
--	cmd->offset += left;
--	left -= left;
--
--	/*if (left)
--		return -EAGAIN;
--		*/
--
-+	bvec_set_virt(&bvec, (void *)cmd->rsp_pdu + cmd->offset, left);
-+	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, left);
-+	ret = sock_sendmsg(cmd->queue->port->sock, &msg);
-+	if (ret < 0)
-+		return ret;
- 	nvmet_tcp_free_cmd_buffers(cmd);
- 	cmd->queue->snd_cmd = NULL;
- 	nvmet_tcp_put_cmd(cmd);
- 	return 1;
- }
- 
--static int nvmet_try_send_r2t(struct nvmet_tcp_cmd *cmd, bool last_in_batch)
-+static int nvmet_try_send_r2t(struct nvmet_tcp_cmd *cmd)
- {
- 	pr_debug("We in send_r2t!");
--	struct msghdr msg = { .msg_flags = MSG_DONTWAIT };
-+	struct msghdr msg;
- 	struct bio_vec bvec;
- 	u8 hdgst = nvmet_tcp_hdgst_len(cmd->queue);
- 	int left = sizeof(*cmd->r2t_pdu) - cmd->offset + hdgst;
- 	int ret;
- 
--	/*
--	if (!last_in_batch && cmd->queue->send_list_len)
--		msg.msg_flags |= MSG_MORE;
--	else
--		msg.msg_flags |= MSG_EOR;
--	*/
--
- 	bvec_set_virt(&bvec, (void *)cmd->r2t_pdu + cmd->offset, left);
- 	iov_iter_bvec(&msg.msg_iter, ITER_SOURCE, &bvec, 1, left);
- 	struct homa_sendmsg_args homa_send_args;
-@@ -842,13 +818,6 @@ static int nvmet_try_send_r2t(struct nvmet_tcp_cmd *cmd, bool last_in_batch)
- 	ret = sock_sendmsg(cmd->queue->port->sock, &msg);
- 	if (ret < 0)
- 		return ret;
--	cmd->offset += left;
--	left -= left;
--
-- /*
--	if (left)
--		return -EAGAIN;
--	*/
- 	cmd->queue->snd_cmd = NULL;
- 	return 1;
- }
-@@ -901,48 +870,67 @@ static int nvmet_tcp_try_send_one(struct nvmet_tcp_queue *queue,
- 			return 0;
- 		}
- 	}
--	pr_debug("Num of sg pages is : %d\n", cmd->req.sg_cnt);
--	struct bio_vec *data_bvecs = kmalloc_array(cmd->req.sg_cnt + 2, sizeof(struct bio_vec)
--	, GFP_KERNEL);
- 	pr_debug("Sending CID: %d\n", cmd->req.cmd->common.command_id);
-+	//So we have 3 cases to deal with here:
- 
--	if (cmd->state == NVMET_TCP_SEND_DATA_PDU) {
-+	switch (cmd->state)
-+	{
-+	case NVMET_TCP_SEND_DATA_PDU:
- 		pr_debug("Sending data pdu \n");
--		ret = nvmet_try_send_data_pdu(cmd, data_bvecs);
--		if (ret <= 0)
--			goto done_send;
--	}
--
--	if (cmd->state == NVMET_TCP_SEND_DATA) {
--		pr_debug("Sending data \n");
--		ret = nvmet_try_send_data(cmd, data_bvecs,last_in_batch);
--		if (ret <= 0)
-+		ret = nvmet_try_send_data_pdu(cmd);
-+		if (ret<=0)
- 			goto done_send;
--	}
--
--	if (cmd->state == NVMET_TCP_SEND_DDGST) {
--		pr_debug("Sending ddgst \n");
--		ret = nvmet_try_send_ddgst(cmd, last_in_batch);
-+		break;
-+	case NVMET_TCP_SEND_R2T:
-+		pr_debug("Sending r2t\n");
-+		ret = nvmet_try_send_r2t(cmd);
- 		if (ret <= 0)
- 			goto done_send;
--	}
--
--	if (cmd->state == NVMET_TCP_SEND_R2T) {
--		ret = nvmet_try_send_r2t(cmd, last_in_batch);
-+		break;
-+	case NVMET_TCP_SEND_RESPONSE:
-+		pr_debug("Sending response \n");
-+		ret = nvmet_try_send_response(cmd);
- 		if (ret <= 0)
- 			goto done_send;
-+		break;
-+	
-+	default:
-+		goto done_send;
-+		break;
- 	}
- 
--	if (cmd->state == NVMET_TCP_SEND_RESPONSE){
--		pr_debug("Sending response \n");
--		ret = nvmet_try_send_response(cmd, data_bvecs,last_in_batch);
--	}
-+	//if (cmd->state == NVMET_TCP_SEND_DATA_PDU) {
-+	//	pr_debug("Sending data pdu \n");
-+	//	ret = nvmet_try_send_data_pdu(cmd, data_bvecs);
-+	//}
-+
-+	//if (cmd->state == NVMET_TCP_SEND_DATA) {
-+	//	pr_debug("Sending data \n");
-+	//	ret = nvmet_try_send_data(cmd, data_bvecs);
-+	//	if (ret <= 0)
-+	//		goto done_send;
-+	//}
-+
-+	//if (cmd->state == NVMET_TCP_SEND_DDGST) {
-+	//	pr_debug("Sending ddgst \n");
-+	//	ret = nvmet_try_send_ddgst(cmd, last_in_batch);
-+	//	if (ret <= 0)
-+	//		goto done_send;
-+	//}
-+
-+	//if (cmd->state == NVMET_TCP_SEND_R2T) {
-+	//	ret = nvmet_try_send_r2t(cmd, last_in_batch);
-+	//	if (ret <= 0)
-+	//		goto done_send;
-+	//}
-+
-+	//if (cmd->state == NVMET_TCP_SEND_RESPONSE){
-+	//	pr_debug("Sending response \n");
-+	//	ret = nvmet_try_send_response(cmd, data_bvecs,last_in_batch);
-+	//}
- 
- done_send:
--	kfree(data_bvecs);
- 	if (ret < 0) {
--		if (ret == -EAGAIN)
--			return 0;
- 		return ret;
- 	}
- 
--- 
-2.37.2
-
-
-From eb028e929de5acb7cdcb0820e66004aa851ef696 Mon Sep 17 00:00:00 2001
-From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
-Date: Thu, 18 Jan 2024 23:35:52 +0000
-Subject: [PATCH 25/27] Reduce Compiler Warnings Add Some Comments Remove
- Redundant Code
-
----
- drivers/nvme/target/tcp.c | 120 +++++---------------------------------
- 1 file changed, 16 insertions(+), 104 deletions(-)
-
-diff --git a/drivers/nvme/target/tcp.c b/drivers/nvme/target/tcp.c
-index 37107aca2f87..7630843fd6e2 100644
---- a/drivers/nvme/target/tcp.c
-+++ b/drivers/nvme/target/tcp.c
-@@ -1171,9 +1171,6 @@ static int nvmet_tcp_done_recv_pdu(struct nvmet_tcp_queue *queue)
- 		return 0;
- 	}
- 
--	if(nvme_is_fabrics(nvme_cmd)){
--		pr_debug("Command identifier is %d\n", nvme_cmd->fabrics.command_id);
--	}
- 	pr_debug("Command identifier is %d\n", nvme_cmd->common.command_id);
- 
- 	queue->cmd = nvmet_tcp_get_cmd(queue);
-@@ -1268,13 +1265,6 @@ struct homa_recvmsg_args *homa_recv_args, int *offset)
- 
- 	copy_from_homa_pool(homa_recv_args, len , offset, queue, &queue->pdu);
- 
--	queue->left -= len;
--
--
--
--	//if (queue->offset == sizeof(struct nvme_tcp_hdr)) 
--	u8 hdgst = nvmet_tcp_hdgst_len(queue);
--
- 	if (unlikely(!nvmet_tcp_pdu_valid(hdr->type))) {
- 		pr_err("unexpected pdu type %d\n", hdr->type);
- 		nvmet_tcp_fatal_error(queue);
-@@ -1288,9 +1278,9 @@ struct homa_recvmsg_args *homa_recv_args, int *offset)
- 	/*queue->left = hdr->hlen - queue->offset + hdgst;
- 	goto recv;*/
- 	
--	len = hdr->hlen - queue->offset; //VERIFY THiS DEFNITELY
-+	len = hdr->hlen - queue->offset; //lets us read the rest of the protocol specific header
-+	//offset is reduced in homa_pool
- 	copy_from_homa_pool(homa_recv_args, len , offset, queue, &queue->pdu);
--	queue->left -= len;
- 
- 	if (queue->hdr_digest &&
- 	    nvmet_tcp_verify_hdgst(queue, &queue->pdu, hdr->hlen)) {
-@@ -1432,7 +1422,6 @@ static int nvmet_tcp_try_recv_one(struct nvmet_tcp_queue *queue)
- static int nvmet_tcp_try_recv(struct nvmet_tcp_queue *queue,
- 		int budget, int *recvs)
- {
--	int i, ret = 0;
- 	/*Some thoughts on this section:
- 		- lol copilot don't know shit
- 		- in the tcp model:
-@@ -1815,49 +1804,6 @@ static void nvmet_tcp_state_change(struct sock *sk)
- 	read_unlock_bh(&sk->sk_callback_lock);
- }
- 
--static int nvmet_tcp_set_queue_sock(struct nvmet_tcp_queue *queue)
--{
--	struct socket *sock = queue->sock;
--	int ret;
--	//TODO: COME HERE AND CLEAR UP LARGE COMMENTED OUT BLOCKS
--	/*ret = kernel_getsockname(sock,
--		(struct sockaddr *)&queue->sockaddr);
--	if (ret < 0)
--		return ret;
--
--	ret = kernel_getpeername(sock,
--		(struct sockaddr *)&queue->sockaddr_peer);
--	if (ret < 0)
--		return ret;*/
--
--	/*
--	 * Cleanup whatever is sitting in the TCP transmit queue on socket
--	 * close. This is done to prevent stale data from being sent should
--	 * the network connection be restored before TCP times out.
--	 */
--	/*sock_no_linger(sock->sk);
--
--	if (so_priority > 0)
--		sock_set_priority(sock->sk, so_priority);
--
--	 Set socket type of service 
--	if (inet->rcv_tos > 0)
--		ip_sock_set_tos(sock->sk, inet->rcv_tos);*/
--
--	ret = 0;
--	write_lock_bh(&sock->sk->sk_callback_lock);
--	sock->sk->sk_user_data = queue;
--	queue->data_ready = sock->sk->sk_data_ready;
--	sock->sk->sk_data_ready = nvmet_tcp_data_ready;
--	queue->state_change = sock->sk->sk_state_change;
--	sock->sk->sk_state_change = nvmet_tcp_state_change;
--	queue->write_space = sock->sk->sk_write_space;
--	sock->sk->sk_write_space = nvmet_tcp_write_space;
--	//queue_work_on(queue_cpu(queue), nvmet_tcp_wq, &queue->io_work);
--	write_unlock_bh(&sock->sk->sk_callback_lock);
--
--	return ret;
--}
- 
- static int nvmet_tcp_alloc_queue(struct nvmet_tcp_port *port, int queue_id)
- {
-@@ -1897,18 +1843,22 @@ static int nvmet_tcp_alloc_queue(struct nvmet_tcp_port *port, int queue_id)
- 	nvmet_prepare_receive_pdu(queue);
- 
- 	mutex_lock(&nvmet_tcp_queue_mutex);
--	list_add_tail(&queue->queue_list, &nvmet_tcp_queue_list);
-+	list_add_tail(&queue->queue_list, &nvmet_tcp_queue_list);/*We don't need this since we are 
-+	keeping an array of queues?*/
- 	mutex_unlock(&nvmet_tcp_queue_mutex);
- 
- 	if (idle_poll_period_usecs)
- 		nvmet_tcp_arm_queue_deadline(queue);
- 
- 	return 0;
--out_destroy_sq:
--	mutex_lock(&nvmet_tcp_queue_mutex);
--	list_del_init(&queue->queue_list);
--	mutex_unlock(&nvmet_tcp_queue_mutex);
--	nvmet_sq_destroy(&queue->nvme_sq);
-+
-+/* this was for destroying queue when we couldn't set a socket for it in tcp could be useful to
-+us in the future*/
-+//out_destroy_sq:
-+//	mutex_lock(&nvmet_tcp_queue_mutex);
-+//	list_del_init(&queue->queue_list);
-+//	mutex_unlock(&nvmet_tcp_queue_mutex);
-+//	nvmet_sq_destroy(&queue->nvme_sq);
- out_free_connect:
- 	nvmet_tcp_free_cmd(&queue->connect);
- out_ida_remove:
-@@ -1918,27 +1868,6 @@ static int nvmet_tcp_alloc_queue(struct nvmet_tcp_port *port, int queue_id)
- 	return ret;
- }
- 
--static void nvmet_tcp_accept_work(struct work_struct *w)
--{
--	struct nvmet_tcp_port *port =
--		container_of(w, struct nvmet_tcp_port, accept_work);
--	struct socket *newsock;
--	int ret;
--
--	while (true) {
--		ret = kernel_accept(port->sock, &newsock, O_NONBLOCK);
--		if (ret < 0) {
--			if (ret != -EAGAIN)
--				pr_warn("failed to accept err=%d\n", ret);
--			return;
--		}
--		//ret = nvmet_tcp_alloc_queue(port, newsock);
--		if (ret) {
--			pr_err("failed to allocate queue\n");
--			sock_release(newsock);
--		}
--	}
--}
- static void nvmet_homa_read_sock(struct work_struct *w){
- 	//This function can't be prempted by another read_sock
- 	//As they it would only be queued after this one is done.
-@@ -1947,7 +1876,7 @@ static void nvmet_homa_read_sock(struct work_struct *w){
- 		container_of(w, struct nvmet_tcp_port, read_sock);
- 	int len;
- 	sockaddr_in_union source;
--	struct msghdr msg = { .msg_flags = MSG_DONTWAIT };
-+	struct msghdr msg;
- 	struct homa_recvmsg_args *homa_recv_args = &port->homa_recv_args;
- 
- 	union nvme_tcp_pdu pdu;  
-@@ -1958,9 +1887,9 @@ static void nvmet_homa_read_sock(struct work_struct *w){
- 	msg.msg_controllen = sizeof(*homa_recv_args);
- 	msg.msg_name = &(source);
- 	msg.msg_namelen = sizeof(source);
--	len = sock_recvmsg(port->sock, &msg, msg.msg_flags);
--	if (unlikely(len < 0)){
--		pr_debug("sock_recvmsg error returned %d\n", len);
-+	len = sock_recvmsg(port->sock, &msg, 0);
-+	if (len < 0 ){
-+		//pr_debug("sock_recvmsg error returned %d\n", len);
- 		//nvmet_tcp_socket_error(queue, len);
- 		goto done;
- 	}
-@@ -1992,23 +1921,6 @@ static void nvmet_homa_read_sock(struct work_struct *w){
- 
- }
- 
--static void nvmet_tcp_listen_data_ready(struct sock *sk)
--{
--	struct nvmet_tcp_port *port;
--
--	trace_sk_data_ready(sk);
--
--	read_lock_bh(&sk->sk_callback_lock);
--	port = sk->sk_user_data;
--	if (!port)
--		goto out;
--
--	if (sk->sk_state == TCP_LISTEN)
--		queue_work(nvmet_wq, &port->accept_work);
--out:
--	read_unlock_bh(&sk->sk_callback_lock);
--}
--
- static int nvmet_tcp_add_port(struct nvmet_port *nport)
- {
- 	struct nvmet_tcp_port *port;
--- 
-2.37.2
-
-
-From 90e5ed773af6f124ea7672232b259909dea41840 Mon Sep 17 00:00:00 2001
-From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
-Date: Sun, 21 Jan 2024 00:48:49 +0000
-Subject: [PATCH 26/27] Queue IO Work On Queue 0
+Date: Thu, 25 Jan 2024 14:05:21 +0000
+Subject: [PATCH 24/24] Queue Work On The Same CPU
 
 ---
  drivers/nvme/target/tcp.c | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/nvme/target/tcp.c b/drivers/nvme/target/tcp.c
-index 7630843fd6e2..0b87344fe1f4 100644
+index 6534eb5713a7..7b782660d7b1 100644
 --- a/drivers/nvme/target/tcp.c
 +++ b/drivers/nvme/target/tcp.c
-@@ -664,7 +664,7 @@ static void nvmet_tcp_queue_response(struct nvmet_req *req)
+@@ -663,7 +663,7 @@ static void nvmet_tcp_queue_response(struct nvmet_req *req)
  
  	llist_add(&cmd->lentry, &queue->resp_list);
  	//here we have to think why we need to queue this as deferred work
@@ -2953,7 +2395,7 @@ index 7630843fd6e2..0b87344fe1f4 100644
  }
  
  static void nvmet_tcp_execute_request(struct nvmet_tcp_cmd *cmd)
-@@ -1457,7 +1457,7 @@ static void nvmet_tcp_schedule_release_queue(struct nvmet_tcp_queue *queue)
+@@ -1480,7 +1480,7 @@ static void nvmet_tcp_schedule_release_queue(struct nvmet_tcp_queue *queue)
  	spin_lock(&queue->state_lock);
  	if (queue->state != NVMET_TCP_Q_DISCONNECTING) {
  		queue->state = NVMET_TCP_Q_DISCONNECTING;
@@ -2962,7 +2404,7 @@ index 7630843fd6e2..0b87344fe1f4 100644
  	}
  	spin_unlock(&queue->state_lock);
  }
-@@ -1744,7 +1744,7 @@ static void nvmet_tcp_data_ready(struct sock *sk)
+@@ -1767,7 +1767,7 @@ static void nvmet_tcp_data_ready(struct sock *sk)
  	read_unlock_bh(&sk->sk_callback_lock);
  
  	trace_sk_data_ready(sk);
@@ -2971,48 +2413,6 @@ index 7630843fd6e2..0b87344fe1f4 100644
  
  
  	/*
--- 
-2.37.2
-
-
-From 9585613d46842e253dfa1d81ae8446a435c37095 Mon Sep 17 00:00:00 2001
-From: Suhas Narreddy <S.Narreddy@sms.ed.ac.uk>
-Date: Mon, 22 Jan 2024 22:24:34 +0000
-Subject: [PATCH 27/27] Remove send loop
-
----
- drivers/nvme/target/tcp.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/nvme/target/tcp.c b/drivers/nvme/target/tcp.c
-index 0b87344fe1f4..78e286b12c12 100644
---- a/drivers/nvme/target/tcp.c
-+++ b/drivers/nvme/target/tcp.c
-@@ -940,19 +940,11 @@ static int nvmet_tcp_try_send_one(struct nvmet_tcp_queue *queue,
- static int nvmet_tcp_try_send(struct nvmet_tcp_queue *queue,
- 		int budget, int *sends)
- {
--	int i, ret = 0;
--
--	for (i = 0; i < budget; i++) {
--		ret = nvmet_tcp_try_send_one(queue, i == budget - 1);
--		if (unlikely(ret < 0)) {
--			nvmet_tcp_socket_error(queue, ret);
--			goto done;
--		} else if (ret == 0) {
--			break;
--		}
--		(*sends)++;
--	}
--done:
-+	int ret = 0;
-+
-+	ret = nvmet_tcp_try_send_one(queue, true);
-+	if (unlikely(ret < 0)) 
-+		nvmet_tcp_socket_error(queue, ret);
- 	return ret;
- }
- 
 -- 
 2.37.2
 
